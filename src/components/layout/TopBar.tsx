@@ -1,44 +1,67 @@
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { motion } from 'framer-motion'
-import { Wallet, Bell } from 'lucide-react'
+import { Bell, Menu, Wallet } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
-export default function TopBar() {
+const pageTitles: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/verify': 'Verify',
+  '/history': 'History',
+  '/wallet': 'Wallet',
+}
+
+interface TopBarProps {
+  onMenuClick: () => void
+}
+
+export default function TopBar({ onMenuClick }: TopBarProps) {
   const { user } = useAuth()
+  const location = useLocation()
   const balance = parseFloat(user?.walletBalance || '0')
+  const title = pageTitles[location.pathname] ?? 'Verity'
 
   return (
-    <header className="sticky top-0 z-20 bg-surface-card/80 backdrop-blur-md border-b border-surface-border px-4 sm:px-6 py-3">
-      <div className="flex items-center justify-between">
-        {/* Left - breadcrumb placeholder */}
-        <div className="ml-8 lg:ml-0">
-          <span className="text-xs text-ink-muted font-medium">
-            {new Date().toLocaleDateString('en-NG', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </span>
+    <header className="sticky top-0 z-30 border-b border-surface-border bg-surface-card/90 px-4 py-3 backdrop-blur-md sm:px-6">
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <button
+            type="button"
+            aria-label="Open navigation"
+            onClick={onMenuClick}
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-surface-border bg-surface-elevated text-ink-primary transition-colors hover:bg-surface-hover lg:hidden"
+          >
+            <Menu size={20} />
+          </button>
+
+          <div className="min-w-0">
+            <p className="truncate font-display text-base font-bold text-ink-primary lg:hidden">
+              {title}
+            </p>
+            <span className="hidden text-xs font-medium text-ink-muted lg:inline">
+              {new Date().toLocaleDateString('en-NG', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </span>
+          </div>
         </div>
 
-        {/* Right - actions */}
-        <div className="flex items-center gap-3">
-          {/* Wallet balance */}
-          <Link to="/wallet">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <Link to="/wallet" aria-label="Wallet balance">
             <motion.div
               whileHover={{ scale: 1.02 }}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-elevated border border-surface-border hover:border-primary/30 transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-surface-border bg-surface-elevated px-2.5 py-1.5 transition-colors hover:border-primary/30 sm:px-3"
             >
               <Wallet size={15} className="text-primary" />
-              <span className="font-mono text-sm font-semibold text-ink-primary">
+              <span className="font-mono text-xs font-semibold text-ink-primary sm:text-sm">
                 N{balance.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
               </span>
             </motion.div>
           </Link>
 
-          {/* Plan badge */}
-          <div className={`px-2 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wider ${
+          <div className={`hidden rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-wider sm:block ${
             user?.plan === 'pro'
               ? 'bg-primary/10 text-primary'
               : user?.plan === 'enterprise'
@@ -48,10 +71,13 @@ export default function TopBar() {
             {user?.plan || 'Free'}
           </div>
 
-          {/* Notification */}
-          <button className="relative p-2 rounded-lg text-ink-secondary hover:text-ink-primary hover:bg-surface-hover transition-colors">
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="relative flex size-10 items-center justify-center rounded-xl text-ink-secondary transition-colors hover:bg-surface-hover hover:text-ink-primary"
+          >
             <Bell size={18} />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+            <span className="absolute right-2.5 top-2.5 size-2 rounded-full bg-primary" />
           </button>
         </div>
       </div>

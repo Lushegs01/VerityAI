@@ -63,7 +63,7 @@ export default function Wallet() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-6xl space-y-5 sm:space-y-6">
       {/* Header */}
       <div>
         <h1 className="font-display text-2xl text-ink-primary">Wallet</h1>
@@ -73,11 +73,11 @@ export default function Wallet() {
       </div>
 
       {/* Balance Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="lg:col-span-2 bg-gradient-to-br from-surface-card to-surface-elevated border border-surface-border rounded-2xl p-6 relative overflow-hidden"
+          className="relative overflow-hidden rounded-2xl border border-surface-border bg-gradient-to-br from-surface-card to-surface-elevated p-5 sm:p-6 lg:col-span-2"
         >
           <div className="absolute top-0 right-0 w-64 h-64 opacity-5">
             <WalletIcon className="w-64 h-64" />
@@ -86,7 +86,7 @@ export default function Wallet() {
             <p className="text-xs text-ink-muted uppercase tracking-wider font-semibold mb-2">
               Available Balance
             </p>
-            <h2 className="font-mono text-4xl font-bold text-ink-primary mb-6">
+            <h2 className="mb-5 break-words font-mono text-3xl font-bold text-ink-primary sm:mb-6 sm:text-4xl">
               N{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h2>
             <div className="flex gap-3">
@@ -94,7 +94,7 @@ export default function Wallet() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowTopUp(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors"
+                className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
               >
                 <Plus size={16} />
                 Top Up
@@ -108,7 +108,7 @@ export default function Wallet() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-surface-card border border-surface-border rounded-2xl p-6"
+          className="rounded-2xl border border-surface-border bg-surface-card p-5 sm:p-6"
         >
           <div className="flex items-center gap-2 mb-4">
             <Building2 className="text-ink-muted w-4 h-4" />
@@ -119,11 +119,11 @@ export default function Wallet() {
           <p className="text-sm text-ink-secondary mb-4">
             Fund your wallet via bank transfer
           </p>
-          <div className="p-4 rounded-xl bg-surface-elevated border border-surface-border">
+          <div className="rounded-xl border border-surface-border bg-surface-elevated p-4">
             <p className="text-xs text-ink-muted mb-1">Bank</p>
             <p className="text-sm font-medium text-ink-primary mb-3">GTBank</p>
             <p className="text-xs text-ink-muted mb-1">Account Number</p>
-            <p className="font-mono text-lg font-bold text-ink-primary">0012345678</p>
+            <p className="break-all font-mono text-lg font-bold text-ink-primary">0012345678</p>
           </div>
         </motion.div>
       </div>
@@ -133,7 +133,7 @@ export default function Wallet() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="bg-surface-card border border-surface-border rounded-2xl overflow-hidden"
+        className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card"
       >
         <div className="p-6 border-b border-surface-border">
           <h2 className="font-display text-lg text-ink-primary">
