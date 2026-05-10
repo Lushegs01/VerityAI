@@ -22,4 +22,4 @@ services:
         sync: false
       - key: OWNER_UNION_ID
         sync: false
-    healthCheckPath: /api/trpc/health
+    healthCheckPath: /api/health

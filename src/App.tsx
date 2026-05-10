@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router'
+import { Routes, Route, Navigate, useLocation } from 'react-router'
 import { Toaster } from 'react-hot-toast'
 import { useAuth } from './hooks/useAuth'
 import AppShell from './components/layout/AppShell'
@@ -14,6 +14,7 @@ import NotFound from './pages/NotFound'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -24,25 +25,17 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
   return <>{children}</>
 }
 
-function AppLayout() {
+function ProtectedShell({ children }: { children: React.ReactNode }) {
   return (
-    <AppShell>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/verify" element={<Verify />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/wallet" element={<Wallet />} />
-        <Route path="/verification/:id" element={<VerificationDetail />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </AppShell>
+    <ProtectedRoute>
+      <AppShell>{children}</AppShell>
+    </ProtectedRoute>
   )
 }
 
@@ -77,15 +70,12 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/badge/:token" element={<PublicBadge />} />
-        <Route
-          path="/dashboard/*"
-          element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Landing />} />
+        <Route path="/dashboard" element={<ProtectedShell><Dashboard /></ProtectedShell>} />
+        <Route path="/verify" element={<ProtectedShell><Verify /></ProtectedShell>} />
+        <Route path="/history" element={<ProtectedShell><History /></ProtectedShell>} />
+        <Route path="/wallet" element={<ProtectedShell><Wallet /></ProtectedShell>} />
+        <Route path="/verification/:id" element={<ProtectedShell><VerificationDetail /></ProtectedShell>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   )

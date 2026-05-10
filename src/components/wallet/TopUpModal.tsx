@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CreditCard, Building2, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { trpc } from '@/providers/trpc'
 
 interface TopUpModalProps {
   onClose: () => void
@@ -13,21 +14,32 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   const [method, setMethod] = useState<'card' | 'transfer'>('card')
   const [amount, setAmount] = useState(5000)
   const [customAmount, setCustomAmount] = useState('')
-  const [isProcessing, setIsProcessing] = useState(false)
+  const utils = trpc.useUtils()
 
-  const finalAmount = customAmount ? parseInt(customAmount) : amount
+  const finalAmount = customAmount.trim() ? Number(customAmount) : amount
+  const topUpMutation = trpc.wallet.topup.useMutation({
+    onSuccess: async (data) => {
+      await Promise.all([
+        utils.wallet.balance.invalidate(),
+        utils.wallet.transactions.invalidate(),
+        utils.auth.me.invalidate(),
+        utils.auth.getExtendedUser.invalidate(),
+      ])
+      toast.success(`N${data.amount.toLocaleString()} added to wallet`)
+      onClose()
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
 
-  const handleSubmit = async () => {
-    if (!finalAmount || finalAmount < 500) {
+  const handleSubmit = () => {
+    if (!Number.isFinite(finalAmount) || finalAmount < 500) {
       toast.error('Minimum top-up is N500')
       return
     }
-    setIsProcessing(true)
-    setTimeout(() => {
-      setIsProcessing(false)
-      toast.success(`N${finalAmount.toLocaleString()} added to wallet!`)
-      onClose()
-    }, 2000)
+
+    topUpMutation.mutate({ amount: finalAmount, method })
   }
 
   return (
@@ -122,16 +134,20 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                 <div className="p-4 rounded-xl bg-surface-elevated border border-surface-border">
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-ink-muted">Amount</span>
-                    <span className="text-ink-primary font-medium">N{finalAmount.toLocaleString()}</span>
+                    <span className="text-ink-primary font-medium">
+                      N{Number.isFinite(finalAmount) ? finalAmount.toLocaleString() : '0'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-ink-muted">Fee (1.5%)</span>
-                    <span className="text-ink-primary font-medium">N{Math.round(finalAmount * 0.015).toLocaleString()}</span>
+                    <span className="text-ink-primary font-medium">
+                      N{Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015).toLocaleString() : '0'}
+                    </span>
                   </div>
                   <div className="border-t border-surface-border pt-2 flex items-center justify-between text-sm">
                     <span className="text-ink-primary font-semibold">Total</span>
                     <span className="text-ink-primary font-mono font-bold">
-                      N{Math.round(finalAmount * 1.015).toLocaleString()}
+                      N{Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015).toLocaleString() : '0'}
                     </span>
                   </div>
                 </div>
@@ -141,10 +157,10 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={handleSubmit}
-                  disabled={isProcessing}
+                  disabled={topUpMutation.isPending}
                   className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
                 >
-                  {isProcessing ? (
+                  {topUpMutation.isPending ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <Zap size={16} />
@@ -165,9 +181,16 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                 </p>
                 <div className="p-3 rounded-xl bg-surface-elevated border border-surface-border">
                   <p className="text-xs text-ink-muted">
-                    Account will be credited automatically. Squad webhook integration handles real-time updates.
+                    Demo transfers are credited through the same wallet ledger used by card payments.
                   </p>
                 </div>
+                <button
+                  onClick={handleSubmit}
+                  disabled={topUpMutation.isPending}
+                  className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                >
+                  Credit Demo Transfer
+                </button>
               </div>
             )}
           </div>

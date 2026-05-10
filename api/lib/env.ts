@@ -15,4 +15,5 @@ export const env = {
   googleClientId: required("GOOGLE_CLIENT_ID"),
   googleClientSecret: required("GOOGLE_CLIENT_SECRET"),
   ownerUnionId: process.env.OWNER_UNION_ID ?? "",
+  kimiOpenUrl: process.env.KIMI_OPEN_URL ?? "https://api.kimi.com",
 };

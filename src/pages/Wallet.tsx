@@ -18,8 +18,9 @@ export default function Wallet() {
   const { data: transactions, isLoading } = trpc.wallet.transactions.useQuery({
     limit: 20,
   })
+  const { data: balanceData } = trpc.wallet.balance.useQuery()
 
-  const balance = parseFloat(user?.walletBalance || '0')
+  const balance = balanceData?.balance ?? parseFloat(user?.walletBalance || '0')
 
   const getTypeIcon = (type: string) => {
     switch (type) {

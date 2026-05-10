@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { Link } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShieldCheck, Zap, AlertCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -7,24 +8,39 @@ import VerdictCard from '@/components/trust/VerdictCard'
 import TrustScoreRing from '@/components/trust/TrustScoreRing'
 import { useAuth } from '@/hooks/useAuth'
 import { trpc } from '@/providers/trpc'
+import type { inferRouterOutputs } from '@trpc/server'
+import type { AppRouter } from '../../api/router'
+
+type VerificationResult = inferRouterOutputs<AppRouter>['verification']['process']
+type CertificateType = 'WAEC' | 'NECO' | 'NABTEB' | 'BSc' | 'BA' | 'HND' | 'OND' | 'NYSC' | 'ICAN' | 'other'
 
 export default function Verify() {
   const { user } = useAuth()
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [certificateType, setCertificateType] = useState('')
+  const [certificateType, setCertificateType] = useState<CertificateType | ''>('')
   const [applicantName, setApplicantName] = useState('')
   const [stage, setStage] = useState<'upload' | 'processing' | 'result'>('upload')
   const [processingStage, setProcessingStage] = useState('')
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<VerificationResult | null>(null)
+  const utils = trpc.useUtils()
 
   const balance = parseFloat(user?.walletBalance || '0')
   const canVerify = balance >= 500
 
   const processMutation = trpc.verification.process.useMutation({
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       setResult(data)
       setStage('result')
+      await Promise.all([
+        utils.auth.me.invalidate(),
+        utils.dashboard.stats.invalidate(),
+        utils.dashboard.recent.invalidate(),
+        utils.dashboard.activity.invalidate(),
+        utils.wallet.balance.invalidate(),
+        utils.wallet.transactions.invalidate(),
+        utils.verification.history.invalidate(),
+      ])
     },
     onError: (err) => {
       toast.error(err.message)
@@ -37,6 +53,12 @@ export default function Verify() {
     const url = URL.createObjectURL(selectedFile)
     setPreviewUrl(url)
   }, [])
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
 
   const handleVerify = async () => {
     if (!file || !canVerify) return
@@ -68,6 +90,11 @@ export default function Verify() {
         certificateType: certificateType || undefined,
         applicantName: applicantName || undefined,
       })
+    }
+    reader.onerror = () => {
+      clearInterval(stageInterval)
+      toast.error('Could not read the selected file')
+      setStage('upload')
     }
     reader.readAsDataURL(file)
 
@@ -110,7 +137,7 @@ export default function Verify() {
           <AlertCircle size={18} className="text-status-fake flex-shrink-0" />
           <p className="text-sm text-ink-primary">
             Insufficient wallet balance. You need at least N500 to verify.
-            <a href="/wallet" className="text-primary hover:underline ml-1">Top up now</a>
+            <Link to="/wallet" className="text-primary hover:underline ml-1">Top up now</Link>
           </p>
         </motion.div>
       )}
@@ -171,7 +198,7 @@ export default function Verify() {
                     </label>
                     <select
                       value={certificateType}
-                      onChange={(e) => setCertificateType(e.target.value)}
+                      onChange={(e) => setCertificateType(e.target.value as CertificateType | '')}
                       className="w-full bg-surface-elevated border border-surface-border rounded-lg px-3 py-2.5 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     >
                       <option value="">Select type...</option>

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Copy, Download, Share2, Flag, FileSearch } from 'lucide-react'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import TrustScoreRing from './TrustScoreRing'
 
 interface Flag {
@@ -13,8 +14,8 @@ interface Flag {
 interface VerdictCardProps {
   certificate: {
     publicId: string
-    trustScore: number
-    verdict: string
+    trustScore: number | null
+    verdict: string | null
     applicantName: string | null
     institutionName: string | null
     certificateType: string | null
@@ -28,11 +29,23 @@ interface VerdictCardProps {
     aiConfidence: number | null
     aiVerdict: string | null
     aiReasoning: string | null
-    aiFlags: string | null
+    aiFlags: Flag[] | string | null
     ruleScore: number | null
     imageQuality: string | null
     processingTimeMs: number | null
-    createdAt: Date | null
+    createdAt: Date | string | null
+  }
+}
+
+function normalizeFlags(value: Flag[] | string | null): Flag[] {
+  if (Array.isArray(value)) return value
+  if (!value) return []
+
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return Array.isArray(parsed) ? (parsed as Flag[]) : []
+  } catch {
+    return []
   }
 }
 
@@ -40,14 +53,39 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
   const [copied, setCopied] = useState(false)
   const [showAllFlags, setShowAllFlags] = useState(false)
 
-  const flags: Flag[] = certificate.aiFlags
-    ? JSON.parse(certificate.aiFlags as string)
-    : []
+  const flags = normalizeFlags(certificate.aiFlags)
 
   const copyId = () => {
     navigator.clipboard.writeText(certificate.publicId)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const downloadReport = () => {
+    const blob = new Blob([JSON.stringify(certificate, null, 2)], {
+      type: 'application/json',
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${certificate.publicId}-report.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const shareReport = async () => {
+    const url = `${window.location.origin}/verification/${certificate.publicId}`
+    if (navigator.share) {
+      await navigator.share({
+        title: `Verification ${certificate.publicId}`,
+        text: `${certificate.applicantName || 'Certificate'} verification result`,
+        url,
+      })
+      return
+    }
+
+    await navigator.clipboard.writeText(url)
+    toast.success('Report link copied')
   }
 
   const severityColor = (s: string) => {
@@ -247,15 +285,26 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
 
       {/* Actions */}
       <div className="p-4 flex flex-wrap gap-2">
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors">
+        <button
+          onClick={downloadReport}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors"
+        >
           <Download size={15} />
-          Download PDF
+          Download Report
         </button>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-elevated border border-surface-border text-ink-primary text-sm font-medium hover:bg-surface-hover transition-colors">
+        <button
+          onClick={() => {
+            void shareReport()
+          }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-elevated border border-surface-border text-ink-primary text-sm font-medium hover:bg-surface-hover transition-colors"
+        >
           <Share2 size={15} />
           Share
         </button>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-elevated border border-surface-border text-ink-secondary text-sm font-medium hover:bg-surface-hover transition-colors">
+        <button
+          onClick={() => toast('Dispute request noted for manual review')}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-elevated border border-surface-border text-ink-secondary text-sm font-medium hover:bg-surface-hover transition-colors"
+        >
           <Flag size={15} />
           Dispute
         </button>

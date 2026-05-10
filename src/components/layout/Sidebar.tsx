@@ -8,21 +8,14 @@ import {
   Wallet,
   Menu,
   X,
-  Award,
-  Building2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/verify', icon: ShieldCheck, label: 'Verify' },
   { to: '/history', icon: History, label: 'History' },
   { to: '/wallet', icon: Wallet, label: 'Wallet' },
-]
-
-const bottomNavItems = [
-  { to: '/institutions', icon: Building2, label: 'Institutions' },
-  { to: '/badge', icon: Award, label: 'Badge Lookup' },
 ]
 
 export default function Sidebar() {
@@ -31,7 +24,7 @@ export default function Sidebar() {
   const { user } = useAuth()
 
   const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/'
+    if (path === '/dashboard') return location.pathname === '/dashboard'
     return location.pathname.startsWith(path)
   }
 
@@ -69,9 +62,9 @@ export default function Sidebar() {
           lg:translate-x-0 lg:static
         `}
       >
-        {/* Logo */}
-        <div className="p-6 border-b border-surface-border">
-          <NavLink to="/" className="flex items-center gap-3">
+          {/* Logo */}
+          <div className="p-6 border-b border-surface-border">
+          <NavLink to="/dashboard" className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
               <ShieldCheck className="text-white" size={20} />
             </div>
@@ -106,28 +99,6 @@ export default function Sidebar() {
             </NavLink>
           ))}
 
-          <div className="pt-4 mt-4 border-t border-surface-border">
-            <p className="px-3 text-[10px] text-ink-muted uppercase tracking-wider font-semibold mb-2">
-              Resources
-            </p>
-            {bottomNavItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive: active }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    active || isActive(item.to)
-                      ? 'bg-primary/10 text-primary border-l-2 border-primary'
-                      : 'text-ink-secondary hover:text-ink-primary hover:bg-surface-hover border-l-2 border-transparent'
-                  }`
-                }
-              >
-                <item.icon size={18} />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </div>
         </nav>
 
         {/* User profile */}
