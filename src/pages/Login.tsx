@@ -1,20 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
-function getOAuthUrl() {
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const redirectUri = `${window.location.origin}/api/oauth/callback`;
-  const state = btoa(redirectUri);
-
-  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-  url.searchParams.set("client_id", googleClientId);
-  url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", "openid email profile");
-  url.searchParams.set("state", state);
-
-  return url.toString();
-}
+import { Paths } from "@contracts/constants";
 
 export default function Login() {
   return (
@@ -28,7 +14,7 @@ export default function Login() {
             className="w-full"
             size="lg"
             onClick={() => {
-              window.location.href = getOAuthUrl();
+              window.location.href = Paths.oauthStart;
             }}
           >
             Sign in with Google

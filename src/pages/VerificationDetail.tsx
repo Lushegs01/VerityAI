@@ -58,7 +58,7 @@ export default function VerificationDetail() {
         </Link>
       </motion.div>
 
-      <VerdictCard certificate={cert as any} />
+      <VerdictCard certificate={cert} />
     </div>
   )
 }

@@ -6,7 +6,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-surface-base noise-overlay flex">
       <Sidebar />
-      <div className="flex-1 flex flex-col ml-0 lg:ml-64">
+      <div className="flex-1 flex flex-col min-w-0">
         <TopBar />
         <motion.main
           initial={{ opacity: 0, y: 8 }}

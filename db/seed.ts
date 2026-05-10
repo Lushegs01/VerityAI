@@ -1,5 +1,5 @@
 import { getDb } from "../api/queries/connection";
-import { users, certificates, walletTransactions, bulkJobs, applicantSelfVerifies, institutions } from "./schema";
+import { users, certificates, walletTransactions, bulkJobs, applicantSelfVerifies, institutions, type InsertCertificate } from "./schema";
 
 async function seed() {
   const db = getDb();
@@ -63,7 +63,7 @@ async function seed() {
   const now = new Date();
 
   // 1. A fake certificate (score 19)
-  const [fakeCert] = await db.insert(certificates).values({
+  await db.insert(certificates).values({
     publicId: "VRT-A3KX8",
     employerId: employer.insertId,
     originalFilename: "waec_result_ifeanyi_2022.jpg",
@@ -82,18 +82,18 @@ async function seed() {
     aiConfidence: 78,
     aiVerdict: "LIKELY_FAKE",
     aiReasoning: "Multiple critical flags detected: font inconsistencies in the grades column, registration number format does not match WAEC pattern, and 8 A1 grades is statistically extremely rare. Certificate shows signs of digital manipulation.",
-    aiFlags: JSON.stringify([
+    aiFlags: [
       { type: "FONT_INCONSISTENCY", severity: "HIGH", field: "grades", description: "Font weight and spacing inconsistent across grades column" },
       { type: "REGISTRATION_FORMAT_INVALID", severity: "CRITICAL", field: "reg_number", description: "Reg number does not match WAEC format pattern" },
       { type: "IMPLAUSIBLE_GRADES", severity: "MEDIUM", field: "grades", description: "8 A1 grades statistically very rare (0.3% probability)" },
       { type: "MISSING_SECURITY_FEATURE", severity: "HIGH", field: "seal", description: "Official WAEC watermark absent or poorly replicated" },
-    ]),
+    ],
     ruleScore: 35,
-    ruleFlags: JSON.stringify([
+    ruleFlags: [
       { rule: "RegNumberFormatRule", description: "Registration number format invalid for WAEC", penalty: 25 },
       { rule: "GradeDistributionRule", description: "8 A1 grades exceeds plausible threshold", penalty: 20 },
       { rule: "InstitutionExistsRule", description: "WAEC is valid institution", penalty: 0 },
-    ]),
+    ],
     trustScore: 19,
     verdict: "LIKELY_FAKE",
     imageQuality: "ACCEPTABLE",
@@ -123,9 +123,9 @@ async function seed() {
     aiConfidence: 94,
     aiVerdict: "AUTHENTIC",
     aiReasoning: "Certificate demonstrates consistent typography, proper UNILAG formatting and seal placement, plausible grade distribution consistent with Computer Science program. All security features present and valid.",
-    aiFlags: JSON.stringify([]),
+    aiFlags: [],
     ruleScore: 95,
-    ruleFlags: JSON.stringify([]),
+    ruleFlags: [],
     trustScore: 91,
     verdict: "VERIFIED",
     imageQuality: "GOOD",
@@ -154,7 +154,8 @@ async function seed() {
 
   // Generate 50 certificates for the bulk job
   const certTypes = ["WAEC", "NECO", "BSc", "HND", "OND", "NYSC"] as const;
-  const verdicts = ["VERIFIED", "SUSPICIOUS", "LIKELY_FAKE"] as const;
+  const verdictDistribution = ["VERIFIED", "VERIFIED", "VERIFIED", "VERIFIED",
+    "SUSPICIOUS", "SUSPICIOUS", "LIKELY_FAKE"] as const;
   const names = [
     "Amina Bello", "Tunde Bakare", "Ngozi Okafor", "Emeka Obi", "Fatima Ibrahim",
     "Olumide Adeyemi", "Chioma Eze", "Yusuf Garba", "Chidinma Nwosu", "Abdul Mohammed",
@@ -170,10 +171,9 @@ async function seed() {
     "Hope Emeka", "Samuel Ior",
   ];
 
-  const bulkCerts = [];
+  const bulkCerts: InsertCertificate[] = [];
   for (let i = 0; i < 50; i++) {
-    const verdictDist = ["VERIFIED", "VERIFIED", "VERIFIED", "VERIFIED",
-      "SUSPICIOUS", "SUSPICIOUS", "LIKELY_FAKE"][Math.floor(Math.random() * 7)];
+    const verdictDist = verdictDistribution[Math.floor(Math.random() * verdictDistribution.length)];
     const certType = certTypes[Math.floor(Math.random() * certTypes.length)];
     const trustScore = verdictDist === "VERIFIED"
       ? 75 + Math.floor(Math.random() * 25)
@@ -195,7 +195,7 @@ async function seed() {
       graduationYear: 2019 + Math.floor(Math.random() * 5),
       trustScore,
       verdict: verdictDist,
-      imageQuality: "GOOD",
+      imageQuality: "GOOD" as const,
       status: "completed" as const,
       costCharged: "500.00",
       completedAt: new Date(now.getTime() - 82800000 + i * 30000),
@@ -208,7 +208,7 @@ async function seed() {
   }
 
   // Create self-verify badge
-  const [selfVerify] = await db.insert(applicantSelfVerifies).values({
+  await db.insert(applicantSelfVerifies).values({
     shareToken: "DEMO-VRT-2024",
     applicantName: "Chioma Okonkwo",
     applicantEmail: "chioma.o@email.com",

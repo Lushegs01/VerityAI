@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { createRouter, publicQuery } from './middleware'
 import { getDb } from './queries/connection'
 import { certificates, applicantSelfVerifies } from '../db/schema'
-import { eq } from 'drizzle-orm'
+import { and, eq, gte, isNull, or, sql } from 'drizzle-orm'
 
 export const publicRouter = createRouter({
   badge: publicQuery
@@ -13,7 +13,14 @@ export const publicRouter = createRouter({
       const selfVerify = await db
         .select()
         .from(applicantSelfVerifies)
-        .where(eq(applicantSelfVerifies.shareToken, input.token))
+        .where(and(
+          eq(applicantSelfVerifies.shareToken, input.token),
+          eq(applicantSelfVerifies.isActive, true),
+          or(
+            isNull(applicantSelfVerifies.expiresAt),
+            gte(applicantSelfVerifies.expiresAt, new Date()),
+          ),
+        ))
         .limit(1)
 
       if (!selfVerify[0]) return null
@@ -25,6 +32,14 @@ export const publicRouter = createRouter({
         .limit(1)
 
       if (!cert[0]) return null
+
+      await db
+        .update(applicantSelfVerifies)
+        .set({
+          viewCount: sql`${applicantSelfVerifies.viewCount} + 1`,
+          lastViewedAt: new Date(),
+        })
+        .where(eq(applicantSelfVerifies.id, selfVerify[0].id))
 
       return {
         applicantName: selfVerify[0].applicantName,
@@ -43,7 +58,7 @@ export const publicRouter = createRouter({
     const allCerts = await db.select().from(certificates)
 
     return {
-      totalVerified: allCerts.length,
+      totalVerified: allCerts.filter(c => c.verdict === 'VERIFIED').length,
       fakesCaught: allCerts.filter(c => c.verdict === 'LIKELY_FAKE').length,
     }
   }),

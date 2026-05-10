@@ -20,6 +20,7 @@ export default function TrustScoreRing({
   const strokeWidth = 10
   const radius = (size - strokeWidth * 2) / 2
   const circumference = 2 * Math.PI * radius
+  const visibleScore = animate ? displayScore : score
 
   // Color by score
   const getColor = () => {
@@ -30,7 +31,7 @@ export default function TrustScoreRing({
 
   const [colorStart, colorEnd] = getColor()
 
-  const offset = circumference - (displayScore / 100) * circumference
+  const offset = circumference - (visibleScore / 100) * circumference
 
   // Glow color
   const getGlowColor = () => {
@@ -48,10 +49,8 @@ export default function TrustScoreRing({
 
   // Animate score
   useEffect(() => {
-    if (!animate) {
-      setDisplayScore(score)
-      return
-    }
+    if (!animate) return
+
     const duration = 1500
     const startTime = Date.now()
     const startValue = 0
@@ -149,7 +148,7 @@ export default function TrustScoreRing({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
-                {displayScore}
+                {visibleScore}
               </motion.span>
               <span className="text-xs text-ink-muted font-mono mt-0.5">/ 100</span>
             </>

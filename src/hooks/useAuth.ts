@@ -1,44 +1,42 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { trpc } from '@/providers/trpc'
 import { useAuthStore } from '@/store/authStore'
 
 export function useAuth() {
-  const { user, setAuth, logout, isLoading, setLoading } = useAuthStore()
-  const [initialized, setInitialized] = useState(false)
+  const { user, setAuth, setUser, logout: clearAuth, isLoading, setLoading } = useAuthStore()
+  const utils = trpc.useUtils()
 
-  const { data: sessionData, isLoading: sessionLoading } = trpc.auth.me.useQuery(
+  const sessionQuery = trpc.auth.me.useQuery(
     undefined,
-    { enabled: !initialized, retry: false }
+    { retry: false, staleTime: 5 * 60 * 1000 }
   )
 
-  const { data: userData } = trpc.auth.getExtendedUser.useQuery(
-    undefined,
-    { enabled: !!sessionData, retry: false }
-  )
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSettled: async () => {
+      clearAuth()
+      await utils.auth.me.invalidate()
+    },
+  })
 
   useEffect(() => {
-    if (!sessionLoading) {
-      setInitialized(true)
-      if (sessionData) {
-        const extendedUser = {
-          ...sessionData,
-          ...userData,
-          fullName: userData?.fullName || sessionData.name,
-          walletBalance: userData?.walletBalance || '0',
-          plan: userData?.plan || 'free',
-          verificationCount: userData?.verificationCount || 0,
-        }
-        setAuth(extendedUser as any)
-      } else {
-        setLoading(false)
-      }
+    if (sessionQuery.isLoading) {
+      setLoading(true)
+      return
     }
-  }, [sessionData, userData, sessionLoading])
+
+    if (sessionQuery.data) {
+      setAuth(sessionQuery.data)
+      return
+    }
+
+    setUser(null)
+    setLoading(false)
+  }, [sessionQuery.data, sessionQuery.isLoading, setAuth, setLoading, setUser])
 
   return {
     user,
     isAuthenticated: !!user,
-    isLoading: isLoading || !initialized,
-    logout,
+    isLoading: isLoading || sessionQuery.isLoading,
+    logout: () => logoutMutation.mutate(),
   }
 }

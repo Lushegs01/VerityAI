@@ -1,12 +1,15 @@
-import { createRouter, publicQuery } from './middleware'
+import { createRouter, authedQuery } from './middleware'
 import { getDb } from './queries/connection'
 import { certificates } from '../db/schema'
-import { desc, sql, gte } from 'drizzle-orm'
+import { and, desc, eq, gte, sql } from 'drizzle-orm'
 
 export const dashboardRouter = createRouter({
-  stats: publicQuery.query(async () => {
+  stats: authedQuery.query(async ({ ctx }) => {
     const db = getDb()
-    const allCerts = await db.select().from(certificates)
+    const allCerts = await db
+      .select()
+      .from(certificates)
+      .where(eq(certificates.employerId, ctx.user.id))
 
     const totalVerified = allCerts.filter(c => c.verdict === 'VERIFIED').length
     const totalSuspicious = allCerts.filter(c => c.verdict === 'SUSPICIOUS').length
@@ -15,16 +18,17 @@ export const dashboardRouter = createRouter({
     return { totalVerified, totalSuspicious, totalFake }
   }),
 
-  recent: publicQuery.query(async () => {
+  recent: authedQuery.query(async ({ ctx }) => {
     const db = getDb()
     return db
       .select()
       .from(certificates)
+      .where(eq(certificates.employerId, ctx.user.id))
       .orderBy(desc(certificates.createdAt))
       .limit(10)
   }),
 
-  activity: publicQuery.query(async () => {
+  activity: authedQuery.query(async ({ ctx }) => {
     const db = getDb()
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -35,7 +39,10 @@ export const dashboardRouter = createRouter({
         count: sql<number>`COUNT(*)`,
       })
       .from(certificates)
-      .where(gte(certificates.createdAt, thirtyDaysAgo))
+      .where(and(
+        eq(certificates.employerId, ctx.user.id),
+        gte(certificates.createdAt, thirtyDaysAgo),
+      ))
       .groupBy(sql`DATE(created_at)`)
       .orderBy(sql`DATE(created_at)`)
 

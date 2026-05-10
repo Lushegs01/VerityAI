@@ -11,11 +11,14 @@ import {
 } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
 
+type VerdictFilter = '' | 'VERIFIED' | 'SUSPICIOUS' | 'LIKELY_FAKE'
+type CertificateTypeFilter = '' | 'WAEC' | 'NECO' | 'BSc' | 'HND' | 'NYSC'
+
 export default function History() {
   const [page, setPage] = useState(1)
-  const [verdictFilter, setVerdictFilter] = useState<string>('')
+  const [verdictFilter, setVerdictFilter] = useState<VerdictFilter>('')
   const [searchQuery, setSearchQuery] = useState('')
-  const [typeFilter, setTypeFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState<CertificateTypeFilter>('')
 
   const { data, isLoading } = trpc.verification.history.useQuery({
     page,
@@ -88,14 +91,14 @@ export default function History() {
         <div className="flex gap-2">
           <select
             value={verdictFilter}
-            onChange={(e) => { setVerdictFilter(e.target.value); setPage(1); }}
+            onChange={(e) => { setVerdictFilter(e.target.value as VerdictFilter); setPage(1); }}
             className="bg-surface-card border border-surface-border rounded-xl px-3 py-2.5 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             {verdictOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <select
             value={typeFilter}
-            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+            onChange={(e) => { setTypeFilter(e.target.value as CertificateTypeFilter); setPage(1); }}
             className="bg-surface-card border border-surface-border rounded-xl px-3 py-2.5 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             {typeOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}

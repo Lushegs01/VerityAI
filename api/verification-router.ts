@@ -1,28 +1,56 @@
 import { z } from 'zod'
-import { createRouter, publicQuery } from './middleware'
+import { TRPCError } from '@trpc/server'
+import { createRouter, authedQuery } from './middleware'
 import { getDb } from './queries/connection'
-import { certificates } from '../db/schema'
+import { certificates, users, walletTransactions, type InsertCertificate } from '../db/schema'
 import { desc, eq, like, and, or, sql } from 'drizzle-orm'
 
-// Simulated AI verification engine
-function simulateAIAnalysis(
-  fileName: string,
-  _certificateType?: string
-): {
+const certificateTypes = [
+  'WAEC', 'NECO', 'NABTEB', 'HND', 'BSc', 'BA', 'BEng',
+  'MSc', 'OND', 'NYSC', 'ICAN', 'COREN', 'NMA', 'other',
+] as const
+const verdicts = ['VERIFIED', 'SUSPICIOUS', 'LIKELY_FAKE'] as const
+
+type CertificateType = (typeof certificateTypes)[number]
+type Verdict = (typeof verdicts)[number]
+type AiVerdict = 'AUTHENTIC' | 'SUSPICIOUS' | 'LIKELY_FAKE'
+type AiFlag = {
+  type: string
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  field: string
+  description: string
+}
+type RuleFlag = {
+  rule: string
+  description: string
+  penalty: number
+}
+type AnalysisResult = {
   aiVisualIntegrity: number
   aiDataPlausibility: number
   aiAnomaly: number
   aiInstitution: number
   aiSecurityFeatures: number
   aiConfidence: number
-  aiVerdict: string
+  aiVerdict: AiVerdict
   aiReasoning: string
-  aiFlags: string
+  aiFlags: AiFlag[]
   ruleScore: number
-  ruleFlags: string
+  ruleFlags: RuleFlag[]
   trustScore: number
-  verdict: string
-} {
+  verdict: Verdict
+}
+
+const certificateTypeSchema = z.enum(certificateTypes)
+const verdictSchema = z.enum(verdicts)
+const VERIFICATION_COST = 500
+
+// Simulated AI verification engine
+function simulateAIAnalysis(
+  fileName: string,
+  certificateType: CertificateType = 'other'
+): AnalysisResult {
+  const certificateLabel = certificateType === 'other' ? 'certificate' : certificateType
   // Randomize slightly but keep consistent for demo
   const isFake = fileName.toLowerCase().includes('fake') || Math.random() < 0.25
   const isGenuine = !isFake && (fileName.toLowerCase().includes('genuine') || fileName.toLowerCase().includes('real') || Math.random() < 0.6)
@@ -36,10 +64,10 @@ function simulateAIAnalysis(
       aiSecurityFeatures: 80 + Math.floor(Math.random() * 15),
       aiConfidence: 85 + Math.floor(Math.random() * 15),
       aiVerdict: 'AUTHENTIC',
-      aiReasoning: 'Certificate demonstrates consistent typography, proper institutional formatting and seal placement, plausible data distribution consistent with program. All security features present and valid.',
-      aiFlags: JSON.stringify([]),
+      aiReasoning: `${certificateLabel} demonstrates consistent typography, proper institutional formatting and seal placement, and plausible data distribution. All security features present and valid.`,
+      aiFlags: [],
       ruleScore: 90 + Math.floor(Math.random() * 10),
-      ruleFlags: JSON.stringify([]),
+      ruleFlags: [],
       trustScore: 85 + Math.floor(Math.random() * 15),
       verdict: 'VERIFIED',
     }
@@ -52,18 +80,18 @@ function simulateAIAnalysis(
       aiSecurityFeatures: 10 + Math.floor(Math.random() * 15),
       aiConfidence: 75 + Math.floor(Math.random() * 15),
       aiVerdict: 'LIKELY_FAKE',
-      aiReasoning: 'Multiple critical flags detected: font inconsistencies in the grades section, registration number format does not match expected pattern, and statistically implausible grade distribution. Certificate shows clear signs of digital manipulation.',
-      aiFlags: JSON.stringify([
+      aiReasoning: `Multiple critical flags detected in this ${certificateLabel}: font inconsistencies, registration number format issues, and statistically implausible grade distribution. Certificate shows clear signs of digital manipulation.`,
+      aiFlags: [
         { type: 'FONT_INCONSISTENCY', severity: 'HIGH', field: 'grades', description: 'Font weight and spacing inconsistent across grades column' },
         { type: 'REGISTRATION_FORMAT_INVALID', severity: 'CRITICAL', field: 'reg_number', description: 'Registration number does not match expected format pattern' },
         { type: 'IMPLAUSIBLE_GRADES', severity: 'MEDIUM', field: 'grades', description: `${8 + Math.floor(Math.random() * 2)} A1 grades statistically very rare (0.3% probability)` },
         { type: 'MISSING_SECURITY_FEATURE', severity: 'HIGH', field: 'seal', description: 'Official watermark absent or poorly replicated' },
-      ]),
+      ],
       ruleScore: 30 + Math.floor(Math.random() * 15),
-      ruleFlags: JSON.stringify([
+      ruleFlags: [
         { rule: 'RegNumberFormatRule', description: 'Registration number format invalid', penalty: 25 },
         { rule: 'GradeDistributionRule', description: 'Statistically implausible grade pattern', penalty: 20 },
-      ]),
+      ],
       trustScore: 15 + Math.floor(Math.random() * 20),
       verdict: 'LIKELY_FAKE',
     }
@@ -78,64 +106,94 @@ function simulateAIAnalysis(
     aiSecurityFeatures: 50 + Math.floor(Math.random() * 15),
     aiConfidence: 65 + Math.floor(Math.random() * 15),
     aiVerdict: 'SUSPICIOUS',
-    aiReasoning: 'Some inconsistencies detected in document formatting and data plausibility. Further manual review recommended.',
-    aiFlags: JSON.stringify([
+    aiReasoning: `Some inconsistencies detected in ${certificateLabel} formatting and data plausibility. Further manual review recommended.`,
+    aiFlags: [
       { type: 'FORMAT_MISMATCH', severity: 'MEDIUM', field: 'layout', description: 'Slight deviation from standard certificate layout' },
-    ]),
+    ],
     ruleScore: 55 + Math.floor(Math.random() * 15),
-    ruleFlags: JSON.stringify([
+    ruleFlags: [
       { rule: 'FormatCheckRule', description: 'Minor formatting deviation detected', penalty: 10 },
-    ]),
+    ],
     trustScore: 50 + Math.floor(Math.random() * 30),
     verdict: 'SUSPICIOUS',
   }
 }
 
 export const verificationRouter = createRouter({
-  process: publicQuery
+  process: authedQuery
     .input(
       z.object({
-        fileName: z.string(),
-        fileType: z.string(),
-        fileData: z.string(),
-        certificateType: z.string().optional(),
-        applicantName: z.string().optional(),
+        fileName: z.string().min(1),
+        fileType: z.string().min(1),
+        fileData: z.string().min(1),
+        certificateType: certificateTypeSchema.optional(),
+        applicantName: z.string().trim().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const db = getDb()
+      const balanceBefore = Number(ctx.user.walletBalance)
+
+      if (balanceBefore < VERIFICATION_COST) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Insufficient wallet balance. Please top up before verifying.',
+        })
+      }
 
       // Generate public ID
       const publicId = `VRT-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
 
       const aiResult = simulateAIAnalysis(input.fileName, input.certificateType)
+      const balanceAfter = balanceBefore - VERIFICATION_COST
 
-      const insertData: any = {
+      const insertData: InsertCertificate = {
         publicId,
-        employerId: 1,
+        employerId: ctx.user.id,
         originalFilename: input.fileName,
+        fileSize: Math.ceil((input.fileData.length * 3) / 4),
         fileType: input.fileType.startsWith('image') ? 'image' : 'pdf',
         applicantName: input.applicantName || null,
-        certificateType: (input.certificateType || 'other') as any,
+        certificateType: input.certificateType || 'other',
         aiVisualIntegrity: aiResult.aiVisualIntegrity,
         aiDataPlausibility: aiResult.aiDataPlausibility,
         aiAnomaly: aiResult.aiAnomaly,
         aiInstitution: aiResult.aiInstitution,
         aiSecurityFeatures: aiResult.aiSecurityFeatures,
         aiConfidence: aiResult.aiConfidence,
-        aiVerdict: aiResult.aiVerdict as any,
+        aiVerdict: aiResult.aiVerdict,
         aiReasoning: aiResult.aiReasoning,
         aiFlags: aiResult.aiFlags,
         ruleScore: aiResult.ruleScore,
         ruleFlags: aiResult.ruleFlags,
         trustScore: aiResult.trustScore,
-        verdict: aiResult.verdict as any,
+        verdict: aiResult.verdict,
         status: 'completed',
-        costCharged: '500.00',
+        costCharged: VERIFICATION_COST.toFixed(2),
         completedAt: new Date(),
       }
 
       const [result] = await db.insert(certificates).values(insertData)
+
+      await db
+        .update(users)
+        .set({
+          walletBalance: balanceAfter.toFixed(2),
+          verificationCount: ctx.user.verificationCount + 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, ctx.user.id))
+
+      await db.insert(walletTransactions).values({
+        employerId: ctx.user.id,
+        type: 'deduction',
+        amount: VERIFICATION_COST.toFixed(2),
+        balanceBefore: balanceBefore.toFixed(2),
+        balanceAfter: balanceAfter.toFixed(2),
+        certificateId: result.insertId,
+        description: `Certificate verification (${publicId})`,
+        status: 'completed',
+      })
 
       const insertedCert = await db
         .select()
@@ -146,35 +204,34 @@ export const verificationRouter = createRouter({
       return insertedCert[0]
     }),
 
-  history: publicQuery
+  history: authedQuery
     .input(
       z.object({
         page: z.number().default(1),
         limit: z.number().default(15),
-        verdict: z.string().optional(),
-        certificateType: z.string().optional(),
+        verdict: verdictSchema.optional(),
+        certificateType: certificateTypeSchema.optional(),
         search: z.string().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const db = getDb()
       const offset = (input.page - 1) * input.limit
 
-      const conditions = []
+      const conditions = [eq(certificates.employerId, ctx.user.id)]
       if (input.verdict) {
-        conditions.push(eq(certificates.verdict, input.verdict as any))
+        conditions.push(eq(certificates.verdict, input.verdict))
       }
       if (input.certificateType) {
-        conditions.push(eq(certificates.certificateType, input.certificateType as any))
+        conditions.push(eq(certificates.certificateType, input.certificateType))
       }
       if (input.search) {
-        conditions.push(
-          or(
-            like(certificates.applicantName, `%${input.search}%`),
-            like(certificates.publicId, `%${input.search}%`),
-            like(certificates.institutionName, `%${input.search}%`)
-          )
+        const searchCondition = or(
+          like(certificates.applicantName, `%${input.search}%`),
+          like(certificates.publicId, `%${input.search}%`),
+          like(certificates.institutionName, `%${input.search}%`)
         )
+        if (searchCondition) conditions.push(searchCondition)
       }
 
       const where = conditions.length > 0 ? and(...conditions) : undefined
@@ -202,14 +259,17 @@ export const verificationRouter = createRouter({
       }
     }),
 
-  getById: publicQuery
+  getById: authedQuery
     .input(z.object({ publicId: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const db = getDb()
       const result = await db
         .select()
         .from(certificates)
-        .where(eq(certificates.publicId, input.publicId))
+        .where(and(
+          eq(certificates.employerId, ctx.user.id),
+          eq(certificates.publicId, input.publicId),
+        ))
         .limit(1)
 
       return result[0] || null
