@@ -31,15 +31,25 @@ function randomToken() {
   return randomBytes(32).toString("base64url");
 }
 
+function getPublicOrigin(c: Context) {
+  if (env.appOrigin) return env.appOrigin;
+
+  const forwardedHost = c.req.header("x-forwarded-host");
+  const host = forwardedHost ?? c.req.header("host");
+  if (!host) return new URL(c.req.url).origin;
+
+  const forwardedProto = c.req.header("x-forwarded-proto")?.split(",")[0];
+  const protocol =
+    forwardedProto ||
+    (host.endsWith(".onrender.com")
+      ? "https"
+      : new URL(c.req.url).protocol.replace(":", ""));
+
+  return `${protocol}://${host}`;
+}
+
 function getRedirectUri(c: Context) {
-  const url = new URL(c.req.url);
-  const forwardedProto = c.req.header("x-forwarded-proto");
-  if (forwardedProto) {
-    url.protocol = forwardedProto;
-  } else if (env.isProduction) {
-    url.protocol = "https:";
-  }
-  return `${url.origin}${Paths.oauthCallback}`;
+  return `${getPublicOrigin(c)}${Paths.oauthCallback}`;
 }
 
 function getGoogleOAuthUrl(redirectUri: string, state: string, nonce: string) {
