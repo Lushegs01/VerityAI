@@ -33,6 +33,12 @@ function randomToken() {
 
 function getRedirectUri(c: Context) {
   const url = new URL(c.req.url);
+  const forwardedProto = c.req.header("x-forwarded-proto");
+  if (forwardedProto) {
+    url.protocol = forwardedProto;
+  } else if (env.isProduction) {
+    url.protocol = "https:";
+  }
   return `${url.origin}${Paths.oauthCallback}`;
 }
 
