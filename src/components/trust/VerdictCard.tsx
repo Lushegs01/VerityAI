@@ -1,19 +1,19 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import {
+  AlertTriangle,
+  CheckCircle2,
   Copy,
   Download,
-  Share2,
   Flag,
-  CheckCircle2,
-  ShieldCheck,
-  AlertTriangle,
-  XCircle,
-  Sparkles,
+  RotateCcw,
+  Share2,
 } from 'lucide-react'
-import { useState } from 'react'
 import toast from 'react-hot-toast'
 import TrustScoreRing from './TrustScoreRing'
-import { Badge, Button, Panel, PanelBody, PanelHeader, PanelTitle } from '@/components/ui-system'
+import ForensicBar from './ForensicBar'
+import { Badge, Button, Panel } from '@/components/ui-system'
+import { cn } from '@/lib/utils'
 
 interface FlagItem {
   type: string
@@ -51,7 +51,6 @@ interface VerdictCardProps {
 function normalizeFlags(value: FlagItem[] | string | null): FlagItem[] {
   if (Array.isArray(value)) return value
   if (!value) return []
-
   try {
     const parsed = JSON.parse(value) as unknown
     return Array.isArray(parsed) ? (parsed as FlagItem[]) : []
@@ -60,40 +59,31 @@ function normalizeFlags(value: FlagItem[] | string | null): FlagItem[] {
   }
 }
 
-const verdictMeta: Record<
-  string,
-  { tone: 'verified' | 'suspicious' | 'fake'; title: string; icon: typeof ShieldCheck; recommend: string; risk: string }
-> = {
-  VERIFIED: {
-    tone: 'verified',
-    title: 'Document Verified',
-    icon: ShieldCheck,
-    recommend: 'Approve',
-    risk: 'Low',
-  },
-  SUSPICIOUS: {
-    tone: 'suspicious',
-    title: 'Manual Review Recommended',
-    icon: AlertTriangle,
-    recommend: 'Request Review',
-    risk: 'Medium',
-  },
-  LIKELY_FAKE: {
-    tone: 'fake',
-    title: 'Likely Forgery Detected',
-    icon: XCircle,
-    recommend: 'Reject',
-    risk: 'High',
-  },
+function verdictWord(score: number): string {
+  if (score >= 70) return 'Authentic.'
+  if (score >= 40) return 'Suspicious.'
+  return 'Likely Fake.'
+}
+
+function verdictTone(score: number): 'verified' | 'suspicious' | 'fake' {
+  if (score >= 70) return 'verified'
+  if (score >= 40) return 'suspicious'
+  return 'fake'
+}
+
+const TEXT_COLOR: Record<'verified' | 'suspicious' | 'fake', string> = {
+  verified: 'text-status-verified',
+  suspicious: 'text-status-suspicious',
+  fake: 'text-status-fake',
 }
 
 export default function VerdictCard({ certificate }: VerdictCardProps) {
   const [copied, setCopied] = useState(false)
-  const [showAllFlags, setShowAllFlags] = useState(false)
 
+  const score = certificate.trustScore || 0
+  const tone = verdictTone(score)
+  const word = verdictWord(score)
   const flags = normalizeFlags(certificate.aiFlags)
-  const meta = verdictMeta[certificate.verdict || ''] || verdictMeta.SUSPICIOUS
-  const VerdictIcon = meta.icon
 
   const copyId = () => {
     navigator.clipboard.writeText(certificate.publicId)
@@ -123,284 +113,244 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
       })
       return
     }
-
     await navigator.clipboard.writeText(url)
     toast.success('Report link copied')
   }
 
-  const severityColor = (s: string) => {
-    switch (s) {
-      case 'CRITICAL':
-        return 'border-status-fake/30 bg-status-fake/8'
-      case 'HIGH':
-        return 'border-status-fake/25 bg-status-fake/5'
-      case 'MEDIUM':
-        return 'border-status-suspicious/25 bg-status-suspicious/5'
-      default:
-        return 'border-surface-border bg-surface-elevated'
-    }
-  }
-
-  const severityBadgeTone = (s: string): 'danger' | 'warning' | 'neutral' => {
-    if (s === 'CRITICAL' || s === 'HIGH') return 'danger'
-    if (s === 'MEDIUM') return 'warning'
-    return 'neutral'
-  }
-
-  const scoreColor = (score: number) => {
-    if (score >= 80) return 'text-status-verified'
-    if (score >= 50) return 'text-status-suspicious'
-    return 'text-status-fake'
-  }
+  const extracted = [
+    { label: 'Applicant', value: certificate.applicantName || '—' },
+    { label: 'Certificate', value: certificate.certificateType || '—' },
+    {
+      label: 'Institution',
+      value: certificate.institutionName || '—',
+      verified: !!certificate.institutionName,
+    },
+    { label: 'Graduation Year', value: certificate.graduationYear?.toString() || '—' },
+    { label: 'Reg Number', value: certificate.regNumber || '—', mono: true },
+    {
+      label: 'Image Quality',
+      value: certificate.imageQuality ? certificate.imageQuality.toUpperCase() : '—',
+    },
+  ]
 
   return (
-    <div className="space-y-4">
-      {/* Top: Trust score + summary */}
-      <Panel className="overflow-hidden">
-        <div className="grid gap-6 p-6 lg:grid-cols-[260px_1fr] lg:p-8">
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-surface-border bg-surface-elevated/40 p-5">
-            <TrustScoreRing
-              score={certificate.trustScore || 0}
-              verdict={certificate.verdict || 'SUSPICIOUS'}
-              size={180}
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-[11px] uppercase tracking-wider text-ink-muted">
-                    ID: {certificate.publicId}
-                  </span>
-                  <button
-                    onClick={copyId}
-                    className="rounded-md p-1 transition-colors hover:bg-surface-hover"
-                    aria-label="Copy ID"
-                  >
-                    {copied ? (
-                      <CheckCircle2 size={11} className="text-status-verified" />
-                    ) : (
-                      <Copy size={11} className="text-ink-muted" />
-                    )}
-                  </button>
-                </div>
-                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-ink-primary truncate">
-                  {certificate.applicantName || 'Unknown Applicant'}
-                </h2>
-                <p className="mt-0.5 text-sm text-ink-secondary">
-                  {certificate.certificateType}
-                  {certificate.institutionName && <> &middot; {certificate.institutionName}</>}
-                </p>
-              </div>
-              <Badge tone={meta.tone} dot>
-                <VerdictIcon size={11} />
-                {certificate.verdict?.replace('_', ' ')}
-              </Badge>
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Stat label="Trust Score" value={`${certificate.trustScore || 0}%`} highlight={meta.tone} />
-              <Stat label="Risk Level" value={meta.risk} highlight={meta.tone} />
-              <Stat
-                label="AI Confidence"
-                value={`${certificate.aiConfidence ?? 0}%`}
-              />
-              <Stat
-                label="Processing"
-                value={
-                  certificate.processingTimeMs
-                    ? `${(certificate.processingTimeMs / 1000).toFixed(1)}s`
-                    : '—'
-                }
-              />
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-              {certificate.graduationYear && (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-ink-muted">Year</p>
-                  <p className="text-ink-primary">{certificate.graduationYear}</p>
-                </div>
-              )}
-              {certificate.regNumber && (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-ink-muted">Reg No</p>
-                  <p className="font-mono text-ink-primary">{certificate.regNumber}</p>
-                </div>
-              )}
-              {certificate.imageQuality && (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-ink-muted">Quality</p>
-                  <p className="text-ink-primary capitalize">{certificate.imageQuality}</p>
-                </div>
-              )}
-              {certificate.createdAt && (
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-ink-muted">Verified</p>
-                  <p className="text-ink-primary">
-                    {new Date(certificate.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </Panel>
-
-      {/* AI Findings */}
-      <Panel>
-        <PanelHeader>
-          <div>
-            <PanelTitle>AI Findings</PanelTitle>
-            <p className="mt-0.5 text-xs text-ink-muted">Score breakdown across forensic checks</p>
-          </div>
-          <Sparkles size={14} className="text-primary" />
-        </PanelHeader>
-        <PanelBody className="space-y-3">
-          {[
-            { label: 'Visual Integrity', score: certificate.aiVisualIntegrity || 0 },
-            { label: 'Data Plausibility', score: certificate.aiDataPlausibility || 0 },
-            { label: 'Institution Match', score: certificate.aiInstitution || 0 },
-            { label: 'Security Features', score: certificate.aiSecurityFeatures || 0 },
-            { label: 'Anomaly Score', score: certificate.aiAnomaly || 0 },
-            { label: 'Rule Engine', score: certificate.ruleScore || 0 },
-          ].map((item, i) => (
-            <div key={item.label} className="grid grid-cols-[140px_1fr_56px] items-center gap-3">
-              <span className="text-xs font-medium text-ink-secondary truncate">{item.label}</span>
-              <div className="h-2.5 overflow-hidden rounded-full bg-surface-elevated">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${item.score}%` }}
-                  transition={{ duration: 0.9, delay: 0.2 + i * 0.05 }}
-                  className={`h-full rounded-full ${
-                    item.score >= 80
-                      ? 'bg-gradient-to-r from-status-verified to-accent-cyan'
-                      : item.score >= 50
-                        ? 'bg-gradient-to-r from-status-suspicious to-amber-400'
-                        : 'bg-gradient-to-r from-status-fake to-rose-500'
-                  }`}
-                />
-              </div>
-              <span className={`text-right font-mono text-xs font-semibold ${scoreColor(item.score)}`}>
-                {item.score}
-              </span>
-            </div>
-          ))}
-
-          {certificate.aiReasoning && (
-            <div className="mt-5 rounded-xl border border-surface-border bg-surface-elevated/40 p-4">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">
-                AI Reasoning
-              </p>
-              <p className="text-sm leading-relaxed text-ink-primary">{certificate.aiReasoning}</p>
-            </div>
+    <div className="space-y-10">
+      {/* Hero Result Header */}
+      <div className="grid gap-10 lg:grid-cols-3">
+        <Panel
+          className={cn(
+            'p-10 lg:col-span-2 bg-gradient-to-br from-surface-card to-status-verified/5',
+            tone === 'suspicious' && 'bg-gradient-to-br from-surface-card to-status-suspicious/5',
+            tone === 'fake' && 'bg-gradient-to-br from-surface-card to-status-fake/5',
           )}
-        </PanelBody>
-      </Panel>
-
-      {/* Flags */}
-      {flags.length > 0 && (
-        <Panel>
-          <PanelHeader>
-            <div className="flex items-center gap-2">
-              <PanelTitle>Risk Flags</PanelTitle>
-              <Badge tone="danger" size="sm">
-                {flags.length}
-              </Badge>
-            </div>
-            <span className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">
-              Auto-detected
-            </span>
-          </PanelHeader>
-          <PanelBody className="space-y-2">
-            {(showAllFlags ? flags : flags.slice(0, 3)).map((flag, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 * i }}
-                className={`rounded-xl border p-3.5 ${severityColor(flag.severity)}`}
+        >
+          <div className="flex flex-col items-center gap-10 md:flex-row md:items-start">
+            <TrustScoreRing score={score} size={240} />
+            <div className="flex-1 text-center md:text-left">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-ink-muted">
+                Forensic Outcome
+              </p>
+              <h2
+                className={cn(
+                  'mt-2 font-display text-4xl font-black uppercase tracking-tight md:text-5xl',
+                  TEXT_COLOR[tone],
+                )}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <Badge tone={severityBadgeTone(flag.severity)} size="sm">
-                    {flag.severity}
-                  </Badge>
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted">
-                    {flag.type}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-ink-primary">{flag.description}</p>
-              </motion.div>
-            ))}
-            {flags.length > 3 && (
+                {word}
+              </h2>
+              <div className="mt-3 inline-flex">
+                <Badge variant={tone} size="md" dot className="text-xs">
+                  {certificate.verdict?.replace('_', ' ') || word.replace('.', '')}
+                </Badge>
+              </div>
+
               <button
-                onClick={() => setShowAllFlags(!showAllFlags)}
-                className="text-xs font-semibold text-primary hover:underline"
+                onClick={copyId}
+                className="mt-5 inline-flex items-center gap-2 rounded-full border border-surface-border bg-surface-elevated px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-ink-secondary transition-colors hover:text-ink-primary"
               >
-                {showAllFlags ? 'Show less' : `Show ${flags.length - 3} more flags`}
+                Node ID: {certificate.publicId}
+                {copied ? (
+                  <CheckCircle2 size={12} className="text-status-verified" />
+                ) : (
+                  <Copy size={12} className="text-ink-muted" />
+                )}
               </button>
-            )}
-          </PanelBody>
-        </Panel>
-      )}
 
-      {/* Recommendation + actions */}
-      <Panel>
-        <PanelHeader>
-          <PanelTitle>Admin Recommendation</PanelTitle>
-          <Badge tone={meta.tone} dot>
-            {meta.recommend}
-          </Badge>
-        </PanelHeader>
-        <PanelBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-ink-secondary">
-            Based on the trust score and detected flags, Verity suggests:{' '}
-            <span className="font-semibold text-ink-primary">{meta.recommend}</span>.
+              {certificate.aiReasoning && (
+                <p className="mt-5 max-w-prose text-sm font-medium leading-relaxed text-ink-secondary">
+                  {certificate.aiReasoning}
+                </p>
+              )}
+            </div>
+          </div>
+        </Panel>
+
+        <Panel className="border-primary/20 bg-primary/5 p-8">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+            Actions
           </p>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={downloadReport} leftIcon={<Download size={14} />}>
-              Export Verification Report
-            </Button>
-            <Button variant="secondary" onClick={() => void shareReport()} leftIcon={<Share2 size={14} />}>
-              Share
+          <div className="mt-6 space-y-3">
+            <Button fullWidth onClick={downloadReport} leftIcon={<Download size={16} />}>
+              Download PDF
             </Button>
             <Button
-              variant="ghost"
-              onClick={() => toast('Dispute request noted for manual review')}
-              leftIcon={<Flag size={14} />}
+              variant="outline"
+              fullWidth
+              onClick={() => void shareReport()}
+              leftIcon={<Share2 size={16} />}
             >
-              Dispute
+              Share Badge
+            </Button>
+            <Button
+              variant="danger"
+              fullWidth
+              onClick={() => toast('Dispute request submitted for manual review')}
+              leftIcon={<Flag size={16} />}
+            >
+              Dispute Verdict
             </Button>
           </div>
-        </PanelBody>
-      </Panel>
+          <a
+            href="/verify"
+            className="mt-6 flex items-center justify-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-primary hover:text-primary-dark"
+          >
+            <RotateCcw size={12} /> Start New Analysis
+          </a>
+        </Panel>
+      </div>
+
+      {/* Detail Grid */}
+      <div className="grid gap-10 lg:grid-cols-2">
+        {/* Extracted info */}
+        <Panel className="overflow-hidden">
+          <div className="border-b border-surface-border px-6 py-5">
+            <h3 className="font-display text-base font-bold uppercase tracking-tight text-ink-primary">
+              Extracted Information
+            </h3>
+          </div>
+          <div className="divide-y divide-surface-border">
+            {extracted.map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between gap-4 p-6"
+              >
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                  {row.label}
+                </span>
+                <div className="flex items-center gap-2 text-right">
+                  <span
+                    className={cn(
+                      'text-sm font-bold text-ink-primary',
+                      row.mono && 'font-mono uppercase tracking-widest',
+                    )}
+                  >
+                    {row.value}
+                  </span>
+                  {row.verified && (
+                    <Badge variant="verified" size="sm" className="text-[9px]">
+                      Verified
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        {/* Forensic Analysis */}
+        <div className="space-y-8">
+          <Panel className="p-6">
+            <h3 className="font-display text-base font-bold uppercase tracking-tight text-ink-primary">
+              Forensic Analysis
+            </h3>
+            <div className="mt-6 space-y-5">
+              <ForensicBar label="Visual Integrity" score={certificate.aiVisualIntegrity || 0} delay={0.1} />
+              <ForensicBar label="Data Plausibility" score={certificate.aiDataPlausibility || 0} delay={0.2} />
+              <ForensicBar label="Institution Recognition" score={certificate.aiInstitution || 0} delay={0.3} />
+              <ForensicBar label="Anomaly Detection" score={certificate.aiAnomaly || 0} delay={0.4} />
+              <ForensicBar label="Security Features" score={certificate.aiSecurityFeatures || 0} delay={0.5} />
+            </div>
+
+            {certificate.aiReasoning && (
+              <div className="mt-6 border-l-2 border-primary/30 pl-4">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+                  AI Reasoning
+                </p>
+                <p className="mt-2 italic text-sm leading-relaxed text-ink-secondary">
+                  &ldquo;{certificate.aiReasoning}&rdquo;
+                </p>
+              </div>
+            )}
+          </Panel>
+
+          {flags.length > 0 && (
+            <Panel className="p-6">
+              <div className="flex items-center justify-between">
+                <h3 className="font-display text-base font-bold uppercase tracking-tight text-ink-primary">
+                  Forensic Flags
+                </h3>
+                <Badge tone="warning" size="sm">
+                  {flags.length}
+                </Badge>
+              </div>
+              <div className="mt-4 space-y-3">
+                {flags.map((flag, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.05 * i }}
+                    className="rounded-2xl border border-status-suspicious/20 bg-status-suspicious-bg/30 p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-status-suspicious-bg text-status-suspicious">
+                        <AlertTriangle size={16} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-status-suspicious">
+                            {flag.type}
+                          </p>
+                          <Badge variant="suspicious" size="sm" className="text-[9px]">
+                            {flag.severity}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-sm font-bold text-ink-primary">{flag.field}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-ink-secondary">
+                          {flag.description}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </Panel>
+          )}
+        </div>
+      </div>
+
+      {/* Footer receipt */}
+      <div className="flex flex-col items-center gap-4 border-t border-surface-border pt-8 text-center">
+        <p className="font-display text-2xl font-black tabular-nums text-ink-primary">
+          ₦500.00 <span className="font-mono text-[10px] uppercase tracking-widest text-ink-muted">Deducted</span>
+        </p>
+        <span className="inline-flex rounded-full border border-surface-border bg-surface-elevated px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+          Ref · {certificate.publicId}
+        </span>
+        <div className="flex flex-wrap items-center justify-center gap-6">
+          <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-status-verified">
+            <span className="relative flex size-2 items-center justify-center">
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-status-verified opacity-75" />
+              <span className="relative inline-flex size-2 rounded-full bg-status-verified" />
+            </span>
+            Squad API: Connected
+          </div>
+          <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-status-verified">
+            <CheckCircle2 size={12} />
+            AI Engine: Optimal
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
-
-function Stat({
-  label,
-  value,
-  highlight,
-}: {
-  label: string
-  value: string
-  highlight?: 'verified' | 'suspicious' | 'fake'
-}) {
-  const tone =
-    highlight === 'verified'
-      ? 'text-status-verified'
-      : highlight === 'suspicious'
-        ? 'text-status-suspicious'
-        : highlight === 'fake'
-          ? 'text-status-fake'
-          : 'text-ink-primary'
-  return (
-    <div className="rounded-xl border border-surface-border bg-surface-elevated/40 p-3">
-      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">{label}</p>
-      <p className={`mt-1 font-mono text-base font-bold ${tone}`}>{value}</p>
-    </div>
-  )
-}
-

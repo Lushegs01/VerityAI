@@ -1,128 +1,41 @@
+import { ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface VerityLogoProps {
   size?: number
   className?: string
-  /**
-   * The fill color used for the gaps between the shield fragments and the
-   * lens of the magnifier. Should match the background the logo sits on so
-   * the cracked-shield illusion reads cleanly.
-   */
-  gapColor?: string
   title?: string
 }
 
 /**
- * Standalone Verity shield mark — a cracked shield with a magnifier overlay.
- * Shield body uses `currentColor` so it inherits text color from the parent.
- * Pink accents are baked in at the brand color.
+ * VerityAI shield mark. Uses lucide ShieldCheck rendered in the brand green
+ * so it matches the system palette without bespoke SVG maintenance.
  */
-export function VerityLogo({
-  size = 40,
-  className,
-  gapColor = 'hsl(var(--surface-base))',
-  title,
-}: VerityLogoProps) {
+export function VerityLogo({ size = 40, className, title }: VerityLogoProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      xmlns="http://www.w3.org/2000/svg"
-      className={cn('block', className)}
+    <span
+      className={cn('inline-flex items-center justify-center text-primary', className)}
+      style={{ width: size, height: size }}
       role={title ? 'img' : 'presentation'}
-      aria-hidden={title ? undefined : true}
+      aria-label={title}
     >
-      {title && <title>{title}</title>}
-
-      {/* Shield body */}
-      <path
-        d="M32 4 L52 9 L52 28 C52 42 42 54 32 60 C22 54 12 42 12 28 L12 9 Z"
-        fill="currentColor"
-      />
-
-      {/* Highlighted top-left fragment (brand pink) */}
-      <path d="M12 9 L22 7 L21 22 L13 22 Z" fill="#E51E56" />
-
-      {/* Crack lines — drawn in the gap color so they appear as breaks */}
-      <g
-        stroke={gapColor}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        fill="none"
-      >
-        {/* Left vertical crack */}
-        <path d="M22 7 L21 22 L18 38 L25 52" />
-        {/* Right vertical crack */}
-        <path d="M40 8 L40 22 L36 36 L42 50" />
-        {/* Upper horizontal crack */}
-        <path d="M13 22 L52 22" />
-        {/* Lower horizontal crack */}
-        <path d="M14 36 L52 36" />
-        {/* Bottom diagonal crack */}
-        <path d="M25 52 L30 55 L34 53" />
-      </g>
-
-      {/* Magnifier — lens */}
-      <circle
-        cx="38"
-        cy="30"
-        r="8.5"
-        fill={gapColor}
-        stroke="#E51E56"
-        strokeWidth="2.4"
-      />
-      {/* Magnifier — inner reflection arc */}
-      <path
-        d="M33 27 A 5 5 0 0 1 38 25"
-        fill="none"
-        stroke="#E51E56"
-        strokeWidth="1.2"
-        opacity="0.55"
-        strokeLinecap="round"
-      />
-      {/* Magnifier — handle */}
-      <line
-        x1="44.5"
-        y1="36.5"
-        x2="50"
-        y2="42"
-        stroke="#E51E56"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
+      <ShieldCheck strokeWidth={2.25} size={size} />
+    </span>
   )
 }
 
 interface BrandMarkProps {
   size?: number
-  gapColor?: string
   className?: string
-  /**
-   * When true, wraps the logo in a soft glow halo. Useful in hero and
-   * loading contexts.
-   */
   glow?: boolean
   title?: string
 }
 
-/**
- * Pre-styled brand mark — applies the right text color and optional halo.
- * Use this anywhere you'd previously render the shield icon.
- */
-export function BrandMark({
-  size = 40,
-  gapColor,
-  className,
-  glow,
-  title,
-}: BrandMarkProps) {
+export function BrandMark({ size = 40, className, glow, title }: BrandMarkProps) {
   return (
     <span
       className={cn(
-        'relative inline-flex shrink-0 items-center justify-center text-ink-primary',
+        'relative inline-flex shrink-0 items-center justify-center',
         className,
       )}
       style={{ width: size, height: size }}
@@ -130,10 +43,10 @@ export function BrandMark({
       {glow && (
         <span
           aria-hidden
-          className="absolute inset-[-30%] -z-10 rounded-full bg-primary/25 blur-2xl"
+          className="absolute inset-[-30%] -z-10 rounded-full bg-primary/20 blur-2xl"
         />
       )}
-      <VerityLogo size={size} gapColor={gapColor} title={title} />
+      <VerityLogo size={size} title={title} />
     </span>
   )
 }
@@ -142,20 +55,14 @@ interface BrandLockupProps {
   size?: number
   showSubtitle?: boolean
   subtitle?: string
-  gapColor?: string
   className?: string
   glow?: boolean
 }
 
-/**
- * Logo + wordmark lockup. Renders as an inline-flex span so parents can
- * wrap it in a Link/NavLink without nesting interactive elements.
- */
 export function BrandLockup({
-  size = 36,
+  size = 32,
   showSubtitle = true,
-  subtitle = 'Trust Engine',
-  gapColor,
+  subtitle = 'Forensic Engine',
   className,
   glow,
 }: BrandLockupProps) {
@@ -163,17 +70,16 @@ export function BrandLockup({
     <span className={cn('inline-flex items-center gap-2.5 group', className)}>
       <BrandMark
         size={size}
-        gapColor={gapColor}
         glow={glow}
         className="transition-transform group-hover:scale-105"
-        title="Verity"
+        title="VerityAI"
       />
       <span className="min-w-0">
-        <span className="block font-display text-base font-bold leading-none tracking-tight text-ink-primary">
-          Verity
+        <span className="block font-display text-lg font-black uppercase leading-none tracking-tighter text-ink-primary">
+          VerityAI
         </span>
         {showSubtitle && (
-          <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+          <span className="mt-1 block text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-ink-muted">
             {subtitle}
           </span>
         )}

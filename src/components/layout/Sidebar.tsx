@@ -4,19 +4,27 @@ import {
   History,
   LayoutDashboard,
   ShieldCheck,
-  Wallet,
+  Award,
+  Layers,
+  Settings,
   X,
   LogOut,
-  Sparkles,
+  ChevronRight,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { BrandLockup } from '@/components/brand/Logo'
+import { cn } from '@/lib/utils'
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', description: 'Command center' },
-  { to: '/verify', icon: ShieldCheck, label: 'Verify', description: 'New verification' },
-  { to: '/history', icon: History, label: 'History', description: 'Audit trail' },
-  { to: '/wallet', icon: Wallet, label: 'Wallet', description: 'Payments' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/verify', icon: ShieldCheck, label: 'Verify Certificate' },
+  { to: '/bulk', icon: Layers, label: 'Bulk Verify' },
+  { to: '/history', icon: History, label: 'History' },
+  { to: '/badge', icon: Award, label: 'Badge' },
+]
+
+const preferenceItems = [
+  { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 interface SidebarProps {
@@ -26,101 +34,102 @@ interface SidebarProps {
 
 function Brand() {
   return (
-    <NavLink to="/dashboard" className="block">
-      <BrandLockup size={40} gapColor="hsl(var(--sidebar-background))" />
+    <NavLink to="/dashboard" className="flex items-center">
+      <BrandLockup size={32} glow showSubtitle={false} />
     </NavLink>
   )
 }
 
-function NavItems({ onSelect }: { onSelect?: () => void }) {
+interface NavItemDef {
+  to: string
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
+  label: string
+}
+
+function NavItem({ item, onSelect }: { item: NavItemDef; onSelect?: () => void }) {
   const location = useLocation()
-
-  const isActivePath = (path: string) => {
-    if (path === '/dashboard') return location.pathname === '/dashboard'
-    return location.pathname.startsWith(path)
-  }
-
+  const isActive =
+    item.to === '/dashboard'
+      ? location.pathname === '/dashboard'
+      : location.pathname.startsWith(item.to)
   return (
-    <nav className="space-y-1 px-3 py-4">
-      <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
-        Workspace
-      </p>
-      {navItems.map((item) => {
-        const active = isActivePath(item.to)
-        return (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            onClick={onSelect}
-            className={({ isActive }) =>
-              `group relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all duration-150 ${
-                isActive || active
-                  ? 'bg-primary/12 text-primary'
-                  : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary'
-              }`
-            }
-          >
-            {active && (
-              <motion.span
-                layoutId="sidebar-active"
-                className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary"
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              />
-            )}
-            <item.icon size={17} strokeWidth={active ? 2.4 : 2} className="shrink-0" />
-            <span className="truncate">{item.label}</span>
-          </NavLink>
-        )
-      })}
-    </nav>
+    <NavLink
+      key={item.to}
+      to={item.to}
+      onClick={onSelect}
+      className={cn(
+        'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors border-l-4',
+        isActive
+          ? 'bg-primary/10 text-primary border-l-primary'
+          : 'border-l-transparent text-ink-secondary hover:bg-surface-elevated hover:text-ink-primary',
+      )}
+    >
+      <item.icon size={20} strokeWidth={isActive ? 2.4 : 2} className="shrink-0" />
+      <span className="truncate flex-1">{item.label}</span>
+      {isActive && <ChevronRight size={14} className="text-primary" />}
+    </NavLink>
   )
 }
 
-function UserProfile() {
-  const { user, logout } = useAuth()
-  const initial = (user?.name || user?.fullName || 'U').charAt(0).toUpperCase()
-
+function NavGroup({
+  label,
+  items,
+  onSelect,
+}: {
+  label: string
+  items: NavItemDef[]
+  onSelect?: () => void
+}) {
   return (
-    <div className="border-t border-surface-border p-3">
-      <div className="rounded-2xl border border-surface-border bg-surface-elevated/60 p-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent-cyan text-xs font-bold text-white shadow-glow">
-            {initial}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-ink-primary">
-              {user?.fullName || user?.name || 'User'}
-            </p>
-            <p className="truncate text-[11px] text-ink-muted">
-              {user?.email || 'Signed in'}
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => logout()}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-surface-border bg-surface-card px-3 py-2 text-xs font-medium text-ink-secondary transition-colors hover:border-status-fake/30 hover:bg-status-fake/5 hover:text-status-fake"
-        >
-          <LogOut size={13} />
-          Sign out
-        </button>
+    <div className="space-y-1">
+      <p className="px-3 pb-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
+        {label}
+      </p>
+      <div className="space-y-1">
+        {items.map((item) => (
+          <NavItem key={item.to} item={item} onSelect={onSelect} />
+        ))}
       </div>
     </div>
   )
 }
 
-function UpgradeBanner() {
-  const { user } = useAuth()
-  if (user?.plan === 'pro' || user?.plan === 'enterprise') return null
+function NavItems({ onSelect }: { onSelect?: () => void }) {
   return (
-    <div className="mx-3 mb-3 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-accent-cyan/5 to-transparent p-4">
-      <div className="flex items-center gap-2">
-        <Sparkles size={14} className="text-primary" />
-        <p className="text-xs font-semibold text-ink-primary">Upgrade to Pro</p>
+    <nav className="space-y-6 px-3 py-4">
+      <NavGroup label="Navigation" items={navItems} onSelect={onSelect} />
+      <NavGroup label="Preferences" items={preferenceItems} onSelect={onSelect} />
+    </nav>
+  )
+}
+
+function SidebarFooter() {
+  const { user, logout } = useAuth()
+  const balance = parseFloat(user?.walletBalance || '0')
+  return (
+    <div className="border-t border-surface-border p-4 space-y-3">
+      <div className="rounded-2xl border border-surface-border bg-surface-base p-4">
+        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
+          Wallet Balance
+        </p>
+        <p className="mt-1 font-mono text-lg font-black tabular-nums text-ink-primary">
+          ₦{balance.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+        </p>
+        <NavLink
+          to="/wallet"
+          className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:text-primary-dark"
+        >
+          Top Up Account →
+        </NavLink>
       </div>
-      <p className="mt-1 text-[11px] leading-snug text-ink-muted">
-        Bulk verifications, team seats, and detailed reports.
-      </p>
+      <button
+        type="button"
+        onClick={() => logout()}
+        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-ink-secondary transition-colors hover:bg-status-fake-bg/40 hover:text-status-fake"
+      >
+        <LogOut size={18} />
+        Logout
+      </button>
     </div>
   )
 }
@@ -128,15 +137,14 @@ function UpgradeBanner() {
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
-      <aside className="hidden w-64 shrink-0 border-r border-surface-border bg-sidebar lg:flex lg:flex-col">
-        <div className="border-b border-surface-border p-5">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-surface-border bg-surface-card lg:flex">
+        <div className="p-6">
           <Brand />
         </div>
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <NavItems />
         </div>
-        <UpgradeBanner />
-        <UserProfile />
+        <SidebarFooter />
       </aside>
 
       <AnimatePresence>
@@ -145,7 +153,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             <motion.button
               type="button"
               aria-label="Close navigation"
-              className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -155,19 +163,19 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
-              className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-surface-border bg-sidebar lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-surface-border bg-surface-card lg:hidden"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 260 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-              <div className="flex items-center justify-between border-b border-surface-border p-5">
+              <div className="flex items-center justify-between p-6">
                 <Brand />
                 <button
                   type="button"
                   aria-label="Close navigation"
                   onClick={onMobileClose}
-                  className="flex size-9 items-center justify-center rounded-lg border border-surface-border bg-surface-elevated text-ink-secondary transition-colors hover:text-ink-primary"
+                  className="flex size-9 items-center justify-center rounded-xl bg-surface-elevated text-ink-secondary transition-colors hover:bg-surface-hover hover:text-ink-primary"
                 >
                   <X size={16} />
                 </button>
@@ -175,8 +183,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               <div className="flex-1 overflow-y-auto py-2">
                 <NavItems onSelect={onMobileClose} />
               </div>
-              <UpgradeBanner />
-              <UserProfile />
+              <SidebarFooter />
             </motion.aside>
           </>
         )}

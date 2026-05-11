@@ -1,31 +1,165 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router'
 import {
-  ShieldCheck,
   AlertTriangle,
-  Wallet,
   ArrowRight,
-  Clock,
-  FileSearch,
-  Activity,
-  Sparkles,
   ArrowUpRight,
-  TrendingUp,
+  CheckCircle2,
+  FileSearch,
+  Layers,
+  Sparkles,
+  Wallet,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { trpc } from '@/providers/trpc'
 import ActivityChart from '@/components/charts/ActivityChart'
 import {
+  Badge,
   Button,
-  EmptyState,
+  Counter,
   Panel,
-  PanelBody,
-  PanelHeader,
-  PanelTitle,
+  Skeleton,
   StatCard,
   VerdictBadge,
-  Skeleton,
 } from '@/components/ui-system'
+
+function ActiveJobs() {
+  const jobs = [
+    { id: 1, name: 'transcript_batch_42.pdf', progress: 68, status: 'PROCESSING' },
+    { id: 2, name: 'finance_dept_15.pdf', progress: 92, status: 'FINALIZING' },
+    { id: 3, name: 'engineering_22.pdf', progress: 34, status: 'PROCESSING' },
+  ]
+  return (
+    <Panel className="p-6">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-base font-bold uppercase tracking-tight text-ink-primary">
+          Active Jobs
+        </h3>
+        <Badge tone="primary" size="sm">
+          {jobs.length}
+        </Badge>
+      </div>
+      <div className="mt-6 space-y-5">
+        {jobs.map((j, i) => (
+          <motion.div
+            key={j.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 * i }}
+            className="space-y-2"
+          >
+            <div className="flex items-center justify-between">
+              <p className="truncate font-mono text-xs font-bold text-ink-primary">
+                {j.name}
+              </p>
+              <span className="font-mono text-[10px] font-black tabular-nums text-primary">
+                {j.progress}%
+              </span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${j.progress}%` }}
+                transition={{ duration: 1, delay: 0.2 + i * 0.1 }}
+                className="h-full rounded-full bg-gradient-to-r from-primary to-primary-light"
+              />
+            </div>
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+              {j.status}
+            </p>
+          </motion.div>
+        ))}
+      </div>
+      <Link
+        to="/bulk"
+        className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-dashed border-surface-border py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-ink-muted transition-colors hover:border-primary/40 hover:text-primary"
+      >
+        View All Active Jobs <ArrowRight size={12} />
+      </Link>
+    </Panel>
+  )
+}
+
+function WalletSection({ balance }: { balance: number }) {
+  const transactions = [
+    { id: 1, name: 'Wallet top-up', date: 'Today, 14:22', amount: 5000, kind: 'credit' as const },
+    { id: 2, name: 'Verification scan', date: 'Today, 12:01', amount: -500, kind: 'debit' as const },
+    { id: 3, name: 'Verification scan', date: 'Yesterday', amount: -500, kind: 'debit' as const },
+    { id: 4, name: 'Wallet top-up', date: '2 days ago', amount: 10000, kind: 'credit' as const },
+  ]
+  return (
+    <div className="grid gap-8 lg:grid-cols-3">
+      <Panel className="relative overflow-hidden p-8 lg:col-span-1 bg-gradient-to-br from-primary via-primary to-primary-dark text-white border-0">
+        <Wallet
+          size={160}
+          className="pointer-events-none absolute -bottom-6 -right-6 opacity-10"
+        />
+        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">
+          Current Balance
+        </p>
+        <p className="mt-3 font-mono text-4xl font-black tabular-nums">
+          ₦{balance.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+        </p>
+        <p className="mt-2 text-xs font-medium text-white/80">
+          Funds {Math.floor(balance / 500)} verifications
+        </p>
+        <Link
+          to="/wallet"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-primary transition-colors hover:bg-white/90"
+        >
+          Top Up Wallet <ArrowRight size={14} />
+        </Link>
+      </Panel>
+
+      <Panel className="p-6 lg:col-span-2">
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-base font-bold uppercase tracking-tight text-ink-primary">
+            Recent Transactions
+          </h3>
+          <Link
+            to="/wallet"
+            className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary hover:text-primary-dark"
+          >
+            View All →
+          </Link>
+        </div>
+        <div className="mt-4 divide-y divide-surface-border">
+          {transactions.map((t) => (
+            <div key={t.id} className="flex items-center gap-4 py-3">
+              <div
+                className={`flex size-10 items-center justify-center rounded-xl ${
+                  t.kind === 'credit'
+                    ? 'bg-status-verified-bg text-status-verified'
+                    : 'bg-primary/10 text-primary'
+                }`}
+              >
+                {t.kind === 'credit' ? <ArrowUpRight size={16} /> : <FileSearch size={16} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-ink-primary">{t.name}</p>
+                <p className="font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+                  {t.date}
+                </p>
+              </div>
+              <div className="text-right">
+                <p
+                  className={`font-mono text-sm font-black tabular-nums ${
+                    t.kind === 'credit' ? 'text-status-verified' : 'text-ink-primary'
+                  }`}
+                >
+                  {t.kind === 'credit' ? '+' : '-'}₦{Math.abs(t.amount).toLocaleString()}
+                </p>
+                <span className="mt-0.5 inline-flex font-mono text-[9px] font-bold uppercase tracking-widest text-status-verified">
+                  Success
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -39,294 +173,268 @@ export default function Dashboard() {
   const totalAll = totalVerified + totalSuspicious + totalFake
   const balance = parseFloat(user?.walletBalance || '0')
 
-  const planLimit = user?.plan === 'pro' ? 200 : user?.plan === 'enterprise' ? Infinity : 5
-  const used = user?.verificationCount || 0
-  const usagePercent = planLimit === Infinity ? 0 : Math.min((used / planLimit) * 100, 100)
-
-  // Compute average trust score from recent verifications as a soft heuristic
-  const avgTrust =
-    recent && recent.length > 0
-      ? Math.round(
-          recent.reduce((sum, c) => sum + (c.trustScore || 0), 0) / recent.length,
-        )
-      : 0
-
   return (
-    <div className="space-y-6">
-      {/* Welcome header */}
+    <div className="space-y-10">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
       >
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-muted">
-            {new Date().toLocaleDateString('en-NG', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </p>
-          <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-ink-primary sm:text-3xl">
-            Welcome back, {user?.fullName?.split(' ')[0] || user?.name?.split(' ')[0] || 'there'}
+          <h1 className="font-display text-3xl font-black uppercase tracking-tighter text-ink-primary md:text-4xl">
+            Forensics Node
           </h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Here's how your verification workflow is performing today.
+          <p className="mt-2 font-mono text-xs font-bold uppercase tracking-widest text-ink-muted">
+            Identity verified:{' '}
+            <span className="text-primary">
+              {user?.fullName || user?.name || 'Operator'}
+            </span>{' '}
+            <span className="mx-1">⚡</span> System latency: 142ms
           </p>
         </div>
-        <Link to="/verify" className="shrink-0">
-          <Button size="lg" rightIcon={<ArrowRight size={16} />} leftIcon={<Sparkles size={15} />}>
-            Start AI Verification
-          </Button>
-        </Link>
+        <div className="flex gap-3">
+          <Link to="/verify">
+            <Button leftIcon={<Sparkles size={16} />}>New Scan</Button>
+          </Link>
+          <Link to="/bulk">
+            <Button variant="outline" leftIcon={<Layers size={16} />}>
+              Bulk Upload
+            </Button>
+          </Link>
+        </div>
       </motion.div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {statsLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-2xl" />
+            <Skeleton key={i} className="h-36 rounded-2xl" />
           ))
         ) : (
           <>
+            <StatCard
+              label="Wallet Balance"
+              value={`₦${balance.toLocaleString('en-NG', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}`}
+              icon={Wallet}
+              tone="accent"
+            />
             <StatCard
               label="Total Verifications"
               value={totalAll}
               icon={FileSearch}
               tone="primary"
-              hint={`${totalAll === 0 ? 'No' : totalAll} processed all-time`}
             />
             <StatCard
-              label="Verified Documents"
+              label="Verified Count"
               value={totalVerified}
-              icon={ShieldCheck}
+              icon={CheckCircle2}
               tone="success"
-              hint="Approved by AI engine"
             />
             <StatCard
-              label="Flagged Submissions"
+              label="Flagged Count"
               value={totalSuspicious + totalFake}
               icon={AlertTriangle}
               tone="warning"
-              hint={`${totalFake} likely fake, ${totalSuspicious} suspicious`}
-            />
-            <StatCard
-              label="Wallet Balance"
-              value={`N${balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-              icon={Wallet}
-              tone="accent"
-              hint={`Funds ${Math.floor(balance / 500)} verifications`}
             />
           </>
         )}
       </div>
 
-      {/* Secondary metrics row */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Panel className="lg:col-span-2 overflow-hidden">
-          <PanelHeader>
+      {/* Chart + Active jobs */}
+      <div className="grid gap-8 lg:grid-cols-3">
+        <Panel className="overflow-hidden lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-surface-border px-6 py-5">
             <div>
-              <PanelTitle>Verification Activity</PanelTitle>
-              <p className="mt-0.5 text-xs text-ink-muted">Submissions across the last 30 days</p>
+              <h3 className="font-display text-base font-bold uppercase tracking-tight text-ink-primary">
+                Verification Activity
+              </h3>
+              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+                Submissions over time
+              </p>
             </div>
-            <div className="flex items-center gap-1.5 rounded-full border border-status-verified/20 bg-status-verified/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-status-verified">
-              <TrendingUp size={11} />
-              Live
-            </div>
-          </PanelHeader>
-          <PanelBody>
+            <select className="cursor-pointer rounded-xl border border-surface-border bg-surface-elevated px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-ink-secondary focus:border-primary focus:outline-none">
+              <option>Last 30 days</option>
+              <option>Last 7 days</option>
+              <option>This quarter</option>
+            </select>
+          </div>
+          <div className="p-6">
             {activityLoading ? (
-              <Skeleton className="h-[260px]" />
+              <div className="grid h-[260px] grid-cols-12 items-end gap-2">
+                {[40, 65, 50, 80, 45, 70, 60, 85, 55, 75, 50, 90].map((h, i) => (
+                  <Skeleton key={i} className="rounded-md" style={{ height: `${h}%` }} />
+                ))}
+              </div>
             ) : (
               <ActivityChart data={activity || []} />
             )}
-          </PanelBody>
+          </div>
         </Panel>
 
-        <div className="space-y-4">
-          {/* Trust score widget */}
-          <Panel padded>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
-                  Average Trust Score
-                </p>
-                <p className="mt-2 font-mono text-3xl font-bold text-ink-primary">{avgTrust || '—'}</p>
-                <p className="mt-1 text-xs text-ink-muted">Across recent verifications</p>
-              </div>
-              <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-accent-cyan/10 text-primary border border-primary/20">
-                <Activity size={18} />
-              </div>
-            </div>
-            <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-surface-elevated">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${avgTrust}%` }}
-                transition={{ duration: 1 }}
-                className={`h-full rounded-full ${
-                  avgTrust >= 80
-                    ? 'bg-gradient-to-r from-status-verified to-accent-cyan'
-                    : avgTrust >= 50
-                      ? 'bg-gradient-to-r from-status-suspicious to-amber-400'
-                      : avgTrust > 0
-                        ? 'bg-gradient-to-r from-status-fake to-primary'
-                        : 'bg-surface-border'
-                }`}
-              />
-            </div>
-            <div className="mt-3 flex justify-between text-[10px] uppercase tracking-wider text-ink-muted">
-              <span>0</span>
-              <span>50</span>
-              <span>100</span>
-            </div>
-          </Panel>
-
-          {/* Quick actions */}
-          <Panel padded>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Quick actions</p>
-            <div className="mt-3 space-y-2">
-              <Link
-                to="/verify"
-                className="group flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5 transition-colors hover:bg-primary/10"
-              >
-                <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-                  <ShieldCheck size={15} />
-                </span>
-                <span className="flex-1 text-sm font-medium text-ink-primary">Run AI verification</span>
-                <ArrowUpRight size={13} className="text-primary opacity-0 transition-opacity group-hover:opacity-100" />
-              </Link>
-              <Link
-                to="/wallet"
-                className="group flex items-center gap-3 rounded-xl border border-surface-border bg-surface-elevated px-3 py-2.5 transition-colors hover:border-primary/20"
-              >
-                <span className="flex size-8 items-center justify-center rounded-lg bg-accent-cyan/15 text-accent-cyan">
-                  <Wallet size={15} />
-                </span>
-                <span className="flex-1 text-sm font-medium text-ink-primary">Top up wallet</span>
-                <ArrowUpRight size={13} className="text-ink-muted opacity-0 transition-opacity group-hover:opacity-100" />
-              </Link>
-              <Link
-                to="/history"
-                className="group flex items-center gap-3 rounded-xl border border-surface-border bg-surface-elevated px-3 py-2.5 transition-colors hover:border-primary/20"
-              >
-                <span className="flex size-8 items-center justify-center rounded-lg bg-accent-emerald/15 text-accent-emerald">
-                  <FileSearch size={15} />
-                </span>
-                <span className="flex-1 text-sm font-medium text-ink-primary">Export verification report</span>
-                <ArrowUpRight size={13} className="text-ink-muted opacity-0 transition-opacity group-hover:opacity-100" />
-              </Link>
-            </div>
-
-            <div className="mt-5 border-t border-surface-border pt-4">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-ink-secondary">Plan usage</span>
-                <span className="font-mono text-ink-primary">
-                  {used} / {planLimit === Infinity ? '∞' : planLimit}
-                </span>
-              </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-elevated">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-accent-cyan transition-all"
-                  style={{ width: `${usagePercent}%` }}
-                />
-              </div>
-              <p className="mt-2 text-[11px] text-ink-muted capitalize">
-                {user?.plan || 'free'} plan
-              </p>
-            </div>
-          </Panel>
-        </div>
+        <ActiveJobs />
       </div>
 
-      {/* Recent verifications */}
+      {/* Recent forensic logs */}
       <Panel className="overflow-hidden">
-        <PanelHeader>
+        <div className="flex items-center justify-between border-b border-surface-border px-6 py-5">
           <div>
-            <PanelTitle>Recent Verifications</PanelTitle>
-            <p className="mt-0.5 text-xs text-ink-muted">Latest submissions across your workspace</p>
+            <h3 className="font-display text-base font-bold uppercase tracking-tight text-ink-primary">
+              Recent Forensic Logs
+            </h3>
+            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+              Latest verifications across your workspace
+            </p>
           </div>
           <Link
             to="/history"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary hover:text-primary-dark"
           >
-            View all
-            <ArrowRight size={13} />
+            Full Archive →
           </Link>
-        </PanelHeader>
+        </div>
 
-        <div className="divide-y divide-surface-border">
-          {recentLoading ? (
-            <div className="p-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-4">
-                  <Skeleton className="size-11 rounded-xl" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-3 w-1/3" />
-                    <Skeleton className="h-2.5 w-1/2" />
-                  </div>
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                </div>
-              ))}
+        {recentLoading ? (
+          <div className="space-y-2 p-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 rounded-xl" />
+            ))}
+          </div>
+        ) : recent && recent.length > 0 ? (
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-surface-border">
+                    {['Certificate', 'Institution', 'Date', 'Score', 'Verdict', ''].map((h) => (
+                      <th
+                        key={h}
+                        className="px-6 py-3 text-left font-mono text-[10px] font-bold uppercase tracking-widest text-ink-muted"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-border">
+                  {recent.map((cert) => {
+                    const score = cert.trustScore || 0
+                    const scoreColor =
+                      score >= 70
+                        ? 'text-status-verified'
+                        : score >= 40
+                          ? 'text-status-suspicious'
+                          : 'text-status-fake'
+                    return (
+                      <tr
+                        key={cert.id}
+                        className="transition-colors hover:bg-surface-elevated/30"
+                      >
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-bold text-ink-primary">
+                            {cert.applicantName || 'Unnamed'}
+                          </p>
+                          <p className="font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+                            {cert.certificateType}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-ink-secondary">
+                          {cert.institutionName || '—'}
+                        </td>
+                        <td className="px-6 py-4 font-mono text-xs text-ink-muted">
+                          {cert.createdAt
+                            ? new Date(cert.createdAt).toLocaleDateString()
+                            : '—'}
+                        </td>
+                        <td
+                          className={`px-6 py-4 font-mono text-sm font-black tabular-nums ${scoreColor}`}
+                        >
+                          {score}
+                        </td>
+                        <td className="px-6 py-4">
+                          <VerdictBadge verdict={cert.verdict} size="sm" />
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <Link
+                            to={`/verification/${cert.publicId}`}
+                            className="inline-flex items-center gap-1 rounded-lg border border-surface-border bg-surface-elevated px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-ink-secondary transition-colors hover:border-primary hover:text-primary"
+                          >
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
-          ) : recent && recent.length > 0 ? (
-            recent.map((cert, i) => {
-              const score = cert.trustScore || 0
-              return (
-                <motion.div
-                  key={cert.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.04 * i }}
-                >
+
+            {/* Mobile cards */}
+            <div className="divide-y divide-surface-border md:hidden">
+              {recent.map((cert) => {
+                const score = cert.trustScore || 0
+                const scoreColor =
+                  score >= 70
+                    ? 'text-status-verified'
+                    : score >= 40
+                      ? 'text-status-suspicious'
+                      : 'text-status-fake'
+                return (
                   <Link
+                    key={cert.id}
                     to={`/verification/${cert.publicId}`}
-                    className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-surface-hover/60"
+                    className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-surface-elevated/30"
                   >
-                    <div
-                      className={`flex size-11 shrink-0 items-center justify-center rounded-xl font-mono text-sm font-bold ${
-                        score >= 80
-                          ? 'bg-status-verified/10 text-status-verified ring-1 ring-status-verified/20'
-                          : score >= 50
-                            ? 'bg-status-suspicious/10 text-status-suspicious ring-1 ring-status-suspicious/20'
-                            : 'bg-status-fake/10 text-status-fake ring-1 ring-status-fake/20'
-                      }`}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="truncate text-sm font-bold text-ink-primary">
+                          {cert.applicantName || 'Unnamed'}
+                        </p>
+                        <VerdictBadge verdict={cert.verdict} size="sm" />
+                      </div>
+                      <p className="mt-1 truncate font-mono text-[10px] uppercase tracking-widest text-ink-muted">
+                        {cert.certificateType}
+                        {cert.institutionName && ` · ${cert.institutionName}`}
+                      </p>
+                    </div>
+                    <span
+                      className={`font-mono text-2xl font-black tabular-nums ${scoreColor}`}
                     >
                       {score}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-ink-primary">
-                        {cert.applicantName || 'Unnamed applicant'}
-                      </p>
-                      <p className="truncate text-xs text-ink-muted">
-                        <span className="font-mono">{cert.publicId}</span>
-                        <span className="mx-1.5">&middot;</span>
-                        {cert.certificateType}
-                        {cert.institutionName && <> &middot; {cert.institutionName}</>}
-                      </p>
-                    </div>
-                    <div className="hidden text-right sm:block">
-                      <VerdictBadge verdict={cert.verdict} size="sm" />
-                      <p className="mt-1 flex items-center justify-end gap-1 text-[10px] text-ink-muted">
-                        <Clock size={10} />
-                        {cert.createdAt ? new Date(cert.createdAt).toLocaleDateString() : ''}
-                      </p>
-                    </div>
-                    <ArrowUpRight size={14} className="hidden text-ink-muted sm:block" />
+                    </span>
                   </Link>
-                </motion.div>
-              )
-            })
-          ) : (
-            <EmptyState
-              icon={FileSearch}
-              title="No verifications yet"
-              description="Run your first AI verification to populate the activity feed and trust score."
-              action={
-                <Link to="/verify">
-                  <Button leftIcon={<Sparkles size={14} />}>Start AI Verification</Button>
-                </Link>
-              }
-            />
-          )}
-        </div>
+                )
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="px-6 py-12 text-center">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+              No forensic logs yet
+            </p>
+            <p className="mt-2 text-sm text-ink-secondary">
+              Run your first scan to populate the archive.
+            </p>
+            <Link to="/verify" className="mt-6 inline-block">
+              <Button leftIcon={<Sparkles size={14} />}>Start First Scan</Button>
+            </Link>
+          </div>
+        )}
       </Panel>
+
+      <WalletSection balance={balance} />
+
+      {/* Footer counter */}
+      <div className="flex flex-wrap items-center justify-center gap-6 border-t border-surface-border pt-8">
+        <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-ink-muted">
+          Today's throughput:{' '}
+          <Counter value={totalAll} className="font-black text-primary" />
+        </p>
+      </div>
     </div>
   )
 }
-

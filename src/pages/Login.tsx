@@ -1,199 +1,269 @@
-import { Link } from 'react-router'
+import { useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { motion } from 'framer-motion'
 import {
-  ShieldCheck,
   ArrowLeft,
-  ArrowRight,
+  Building2,
+  Eye,
+  EyeOff,
   Lock,
-  CreditCard,
+  Mail,
+  ShieldCheck,
   Sparkles,
-  CheckCircle,
-  FileSearch,
-  Brain,
+  User,
 } from 'lucide-react'
 import { Paths } from '@contracts/constants'
-import { BrandLockup } from '@/components/brand/Logo'
+import { Button } from '@/components/ui-system'
+import { cn } from '@/lib/utils'
 
-const benefits = [
-  {
-    icon: ShieldCheck,
-    title: 'Secure verification',
-    description: 'Every workflow is encrypted, NDPR-compliant, and audit-ready.',
-  },
-  {
-    icon: Brain,
-    title: 'AI-assisted review',
-    description: 'GPT-4o Vision forensics flag anomalies in seconds, not weeks.',
-  },
-  {
-    icon: CreditCard,
-    title: 'Payment-backed workflow',
-    description: 'Squad payments anchor every verification with a financial audit trail.',
-  },
-]
+type Mode = 'login' | 'register'
 
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M21.6 12.227c0-.681-.062-1.336-.176-1.964H12v3.71h5.385a4.604 4.604 0 0 1-2 3.023v2.51h3.232c1.89-1.74 2.983-4.305 2.983-7.279z" fill="#4285F4"/>
-      <path d="M12 22c2.7 0 4.964-.895 6.617-2.422l-3.232-2.509c-.895.6-2.041.957-3.385.957-2.604 0-4.808-1.758-5.595-4.121H3.07v2.59A9.996 9.996 0 0 0 12 22z" fill="#34A853"/>
-      <path d="M6.405 13.905A6.012 6.012 0 0 1 6.09 12c0-.66.114-1.302.314-1.905V7.505H3.07a9.996 9.996 0 0 0 0 8.99l3.335-2.59z" fill="#FBBC05"/>
-      <path d="M12 5.974c1.469 0 2.787.505 3.823 1.495l2.867-2.867C16.96 2.99 14.696 2 12 2 8.107 2 4.745 4.234 3.07 7.505l3.335 2.59C7.192 7.732 9.396 5.974 12 5.974z" fill="#EA4335"/>
+      <path
+        d="M21.6 12.227c0-.681-.062-1.336-.176-1.964H12v3.71h5.385a4.604 4.604 0 0 1-2 3.023v2.51h3.232c1.89-1.74 2.983-4.305 2.983-7.279z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 22c2.7 0 4.964-.895 6.617-2.422l-3.232-2.509c-.895.6-2.041.957-3.385.957-2.604 0-4.808-1.758-5.595-4.121H3.07v2.59A9.996 9.996 0 0 0 12 22z"
+        fill="#34A853"
+      />
+      <path
+        d="M6.405 13.905A6.012 6.012 0 0 1 6.09 12c0-.66.114-1.302.314-1.905V7.505H3.07a9.996 9.996 0 0 0 0 8.99l3.335-2.59z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.974c1.469 0 2.787.505 3.823 1.495l2.867-2.867C16.96 2.99 14.696 2 12 2 8.107 2 4.745 4.234 3.07 7.505l3.335 2.59C7.192 7.732 9.396 5.974 12 5.974z"
+        fill="#EA4335"
+      />
     </svg>
   )
 }
 
-export default function Login() {
+function PasswordStrength({ password }: { password: string }) {
+  const score = useMemo(() => {
+    if (!password) return 0
+    let s = 0
+    if (password.length >= 8) s++
+    if (/[A-Z]/.test(password)) s++
+    if (/[0-9]/.test(password)) s++
+    if (/[^A-Za-z0-9]/.test(password)) s++
+    return Math.min(3, s)
+  }, [password])
+
+  const bars = [
+    score >= 1 ? 'bg-status-fake' : 'bg-surface-elevated',
+    score >= 2 ? 'bg-status-suspicious' : 'bg-surface-elevated',
+    score >= 3 ? 'bg-status-verified' : 'bg-surface-elevated',
+  ]
+
   return (
-    <div className="min-h-screen overflow-hidden bg-surface-base">
-      <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
-        {/* LEFT — value proposition */}
-        <div className="relative hidden overflow-hidden border-r border-surface-border bg-surface-card lg:flex lg:flex-col lg:p-12">
-          <div className="absolute inset-0 -z-10 bg-grid-pattern opacity-[0.5]" aria-hidden />
-          <div className="absolute -top-32 -left-32 -z-10 size-[480px] rounded-full bg-primary/15 blur-[120px]" aria-hidden />
-          <div className="absolute bottom-0 right-0 -z-10 size-[400px] rounded-full bg-accent-cyan/10 blur-[120px]" aria-hidden />
+    <div className="mt-2 flex gap-1">
+      {bars.map((c, i) => (
+        <span key={i} className={cn('h-1 flex-1 rounded-full transition-colors', c)} />
+      ))}
+    </div>
+  )
+}
 
-          <Link to="/" className="block">
-            <BrandLockup size={42} gapColor="hsl(var(--surface-card))" />
-          </Link>
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string
+  icon?: React.ReactNode
+  error?: string
+  rightSlot?: React.ReactNode
+}
 
-          <div className="mt-auto max-w-md">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-              <Sparkles size={12} />
-              Trust Engine for institutions
+function FormField({ label, icon, error, rightSlot, id, ...props }: InputProps) {
+  const inputId = id || label.replace(/\s+/g, '-').toLowerCase()
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label
+          htmlFor={inputId}
+          className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted"
+        >
+          {label}
+        </label>
+        {rightSlot}
+      </div>
+      <div className="relative">
+        {icon && (
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted">
+            {icon}
+          </span>
+        )}
+        <input
+          id={inputId}
+          className={cn(
+            'h-12 w-full rounded-xl border bg-surface-elevated text-sm font-medium text-ink-primary placeholder:text-ink-muted/70 focus:outline-none focus:ring-1 focus:ring-primary',
+            icon ? 'pl-11 pr-4' : 'px-4',
+            error
+              ? 'border-status-fake/60 focus:border-status-fake'
+              : 'border-surface-border focus:border-primary',
+          )}
+          {...props}
+        />
+      </div>
+      {error && <p className="text-[10px] font-bold text-status-fake">{error}</p>}
+    </div>
+  )
+}
+
+export default function Login() {
+  const navigate = useNavigate()
+  const [mode, setMode] = useState<Mode>('login')
+  const [showPw, setShowPw] = useState(false)
+  const [showPw2, setShowPw2] = useState(false)
+  const [password, setPassword] = useState('')
+
+  const isRegister = mode === 'register'
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    navigate('/dashboard')
+  }
+
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-base px-4 py-10">
+      <div className="pointer-events-none absolute -left-32 top-10 -z-10 size-[28rem] rounded-full bg-primary/5 blur-[120px]" />
+      <div className="pointer-events-none absolute -right-32 bottom-10 -z-10 size-[28rem] rounded-full bg-accent-cyan/5 blur-[120px]" />
+
+      <Link
+        to="/"
+        className="absolute left-6 top-6 inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-ink-muted transition-colors hover:text-ink-primary"
+      >
+        <ArrowLeft size={14} /> Back home
+      </Link>
+
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="w-full max-w-lg rounded-3xl border border-surface-border bg-surface-card p-8 shadow-2xl md:p-10"
+      >
+        <div className="flex items-center gap-3">
+          <span className="relative inline-flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <ShieldCheck size={22} />
+          </span>
+          <div>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+              <Sparkles size={10} className="mr-1 inline" /> VerityAI
             </span>
-            <h1 className="mt-6 font-display text-4xl font-bold leading-tight tracking-tight text-ink-primary">
-              AI-Powered Verification for a Trust-First Economy
-            </h1>
-            <p className="mt-5 text-base text-ink-secondary">
-              Sign in to verify documents, generate trust scores, and unlock payment-backed
-              verification workflows in seconds.
+            <p className="font-display text-2xl font-black uppercase tracking-tight text-ink-primary md:text-3xl">
+              {isRegister ? 'Create Account' : 'Sign In'}
             </p>
-
-            <div className="mt-10 space-y-4">
-              {benefits.map((b, i) => (
-                <motion.div
-                  key={b.title}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + i * 0.08 }}
-                  className="flex items-start gap-3"
-                >
-                  <div className="mt-0.5 flex size-9 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
-                    <b.icon size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-ink-primary">{b.title}</p>
-                    <p className="mt-0.5 text-xs text-ink-muted leading-relaxed">{b.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-12 rounded-2xl border border-surface-border bg-surface-elevated/50 p-5 backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-status-verified/15 text-status-verified ring-1 ring-status-verified/30">
-                <FileSearch size={15} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-ink-primary">Live: 124,847 documents verified</p>
-                <p className="text-xs text-ink-muted">80% faster than manual review &middot; NDPR compliant</p>
-              </div>
-              <CheckCircle size={16} className="text-status-verified" />
-            </div>
           </div>
         </div>
+        <p className="mt-3 text-sm font-medium text-ink-secondary">
+          {isRegister
+            ? 'Join 1,200+ employers verifying smarter.'
+            : 'Welcome back to the forensic engine.'}
+        </p>
 
-        {/* RIGHT — auth panel */}
-        <div className="relative flex flex-col px-5 py-10 sm:px-12 lg:p-12">
-          <div className="absolute inset-0 -z-10 bg-grid-pattern opacity-30 lg:hidden" aria-hidden />
-
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition-colors hover:text-ink-primary self-start"
-          >
-            <ArrowLeft size={15} />
-            Back to home
-          </Link>
-
-          <div className="my-auto mx-auto w-full max-w-md py-10">
-            <div className="lg:hidden mb-8">
-              <BrandLockup size={40} showSubtitle={false} />
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          {isRegister && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField label="Full Name" icon={<User size={16} />} placeholder="Ada Lovelace" />
+              <FormField label="Company" icon={<Building2 size={16} />} placeholder="VerityAI" />
             </div>
+          )}
 
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="rounded-3xl border border-surface-border bg-surface-card p-7 sm:p-9 shadow-soft"
-            >
-              <h2 className="font-display text-2xl font-bold tracking-tight text-ink-primary">
-                Sign in to Verity
-              </h2>
-              <p className="mt-2 text-sm text-ink-muted">
-                Continue with your work account to access the verification dashboard.
-              </p>
+          <FormField
+            label="Email"
+            type="email"
+            icon={<Mail size={16} />}
+            placeholder="you@company.com"
+            required
+          />
 
+          <div className={isRegister ? 'grid grid-cols-1 gap-4 sm:grid-cols-2' : ''}>
+            <div>
+              <FormField
+                label="Password"
+                type={showPw ? 'text' : 'password'}
+                icon={<Lock size={16} />}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                rightSlot={
+                  !isRegister && (
+                    <a
+                      href="#"
+                      className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-primary hover:text-primary-dark"
+                    >
+                      Forgot password?
+                    </a>
+                  )
+                }
+              />
               <button
                 type="button"
-                onClick={() => {
-                  window.location.href = Paths.oauthStart
-                }}
-                className="mt-7 inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-surface-border bg-surface-elevated text-sm font-semibold text-ink-primary transition-all hover:border-primary/40 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                onClick={() => setShowPw((v) => !v)}
+                className="-mt-12 ml-auto mr-3 flex size-8 items-center justify-center rounded-md text-ink-muted hover:text-ink-primary"
+                aria-label="Toggle password visibility"
               >
-                <GoogleIcon />
-                Continue with Google
+                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
-
-              <div className="my-7 flex items-center gap-3">
-                <span className="h-px flex-1 bg-surface-border" />
-                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Secure SSO</span>
-                <span className="h-px flex-1 bg-surface-border" />
-              </div>
-
-              <ul className="space-y-2.5">
-                {[
-                  'SSO through Google Workspace',
-                  'No passwords stored on our servers',
-                  'NDPR-compliant data handling',
-                ].map((line) => (
-                  <li key={line} className="flex items-center gap-2 text-xs text-ink-secondary">
-                    <CheckCircle size={13} className="text-status-verified" />
-                    {line}
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-7 flex items-center justify-between rounded-xl border border-surface-border bg-surface-elevated/40 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Lock size={13} className="text-ink-muted" />
-                  <span className="text-[11px] text-ink-muted">256-bit encrypted</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CreditCard size={13} className="text-ink-muted" />
-                  <span className="text-[11px] text-ink-muted">Powered by Squad</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <p className="mt-6 text-center text-xs text-ink-muted">
-              By signing in you agree to our{' '}
-              <a href="#" className="text-ink-secondary underline-offset-2 hover:underline">Terms</a> and{' '}
-              <a href="#" className="text-ink-secondary underline-offset-2 hover:underline">Privacy Policy</a>.
-            </p>
-
-            <div className="mt-10 hidden lg:flex items-center justify-center gap-2 text-xs text-ink-muted">
-              <span>New to Verity?</span>
-              <Link to="/" className="inline-flex items-center gap-1 font-semibold text-ink-secondary hover:text-ink-primary">
-                See how it works
-                <ArrowRight size={12} />
-              </Link>
+              {isRegister && <PasswordStrength password={password} />}
             </div>
+
+            {isRegister && (
+              <div>
+                <FormField
+                  label="Confirm Password"
+                  type={showPw2 ? 'text' : 'password'}
+                  icon={<Lock size={16} />}
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw2((v) => !v)}
+                  className="-mt-12 ml-auto mr-3 flex size-8 items-center justify-center rounded-md text-ink-muted hover:text-ink-primary"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPw2 ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            )}
           </div>
 
+          <Button type="submit" fullWidth size="lg" className="text-base">
+            {isRegister ? 'Create Account' : 'Sign In'}
+          </Button>
+        </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <span className="h-px flex-1 bg-surface-border" />
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
+            Or continue with
+          </span>
+          <span className="h-px flex-1 bg-surface-border" />
         </div>
-      </div>
+
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href = Paths.oauthStart
+          }}
+          className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-surface-border bg-surface-elevated text-sm font-bold text-ink-primary transition-all hover:border-primary/40 hover:bg-surface-hover"
+        >
+          <GoogleIcon /> Continue with Google
+        </button>
+
+        <p className="mt-8 text-center text-sm font-medium text-ink-secondary">
+          {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
+          <button
+            type="button"
+            onClick={() => setMode(isRegister ? 'login' : 'register')}
+            className="font-bold text-primary hover:text-primary-dark"
+          >
+            {isRegister ? 'Sign In' : 'Create Account'}
+          </button>
+        </p>
+      </motion.div>
     </div>
   )
 }
