@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useId } from 'react'
 import { motion } from 'framer-motion'
 
 interface TrustScoreRingProps {
@@ -21,30 +21,28 @@ export default function TrustScoreRing({
   const radius = (size - strokeWidth * 2) / 2
   const circumference = 2 * Math.PI * radius
   const visibleScore = animate ? displayScore : score
+  const gradientId = useId()
 
-  // Color by score
-  const getColor = () => {
-    if (score >= 85) return ['#00C896', '#00D4FF']
-    if (score >= 50) return ['#F59E0B', '#FF8C00']
-    return ['#FF4757', '#E51E56']
+  const getColor = (): [string, string] => {
+    if (score >= 85) return ['#10B981', '#22D3EE']
+    if (score >= 50) return ['#F59E0B', '#FB923C']
+    return ['#EF4444', '#F43F5E']
   }
 
   const [colorStart, colorEnd] = getColor()
 
   const offset = circumference - (visibleScore / 100) * circumference
 
-  // Verdict label
   const getVerdictLabel = () => {
     if (verdict === 'VERIFIED') return 'VERIFIED'
     if (verdict === 'SUSPICIOUS') return 'SUSPICIOUS'
     return 'LIKELY FAKE'
   }
 
-  // Animate score
   useEffect(() => {
     if (!animate) return
 
-    const duration = 1500
+    const duration = 1400
     const startTime = Date.now()
     const startValue = 0
 
@@ -69,20 +67,14 @@ export default function TrustScoreRing({
           height: size,
         }}
       >
-        {/* SVG Ring */}
-        <svg
-          width={size}
-          height={size}
-          className="transform -rotate-90"
-        >
+        <svg width={size} height={size} className="transform -rotate-90">
           <defs>
-            <linearGradient id={`score-gradient-${score}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor={colorStart} />
               <stop offset="100%" stopColor={colorEnd} />
             </linearGradient>
           </defs>
 
-          {/* Background track */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -92,27 +84,25 @@ export default function TrustScoreRing({
             strokeWidth={strokeWidth}
           />
 
-          {/* Progress arc */}
           <motion.circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke={`url(#score-gradient-${score})`}
+            stroke={`url(#${gradientId})`}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 1.5, ease: 'easeOut' }}
+            transition={{ duration: 1.4, ease: 'easeOut' }}
           />
         </svg>
 
-        {/* Center content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           {processingStage ? (
-            <div className="text-center px-4">
-              <div className="w-8 h-8 mx-auto mb-2 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="px-4 text-center">
+              <div className="mx-auto mb-2 size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <p className="text-xs text-ink-secondary">{processingStage}</p>
             </div>
           ) : (
@@ -125,26 +115,34 @@ export default function TrustScoreRing({
               >
                 {visibleScore}
               </motion.span>
-              <span className="text-xs text-ink-muted font-mono mt-0.5">/ 100</span>
+              <span className="mt-0.5 font-mono text-xs text-ink-muted">/ 100</span>
             </>
           )}
         </div>
       </div>
 
-      {/* Verdict badge */}
       {!processingStage && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1 }}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${
+          transition={{ delay: 0.8 }}
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${
             verdict === 'VERIFIED'
-              ? 'bg-status-verified/10 text-status-verified border border-status-verified/20'
+              ? 'bg-status-verified/10 text-status-verified border border-status-verified/25'
               : verdict === 'SUSPICIOUS'
-                ? 'bg-status-suspicious/10 text-status-suspicious border border-status-suspicious/20'
-                : 'bg-status-fake/10 text-status-fake border border-status-fake/20'
+                ? 'bg-status-suspicious/10 text-status-suspicious border border-status-suspicious/25'
+                : 'bg-status-fake/10 text-status-fake border border-status-fake/25'
           }`}
         >
+          <span
+            className={`size-1.5 rounded-full ${
+              verdict === 'VERIFIED'
+                ? 'bg-status-verified'
+                : verdict === 'SUSPICIOUS'
+                  ? 'bg-status-suspicious'
+                  : 'bg-status-fake'
+            }`}
+          />
           {getVerdictLabel()}
         </motion.div>
       )}

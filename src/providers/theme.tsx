@@ -26,8 +26,8 @@ function isTheme(value: string | null): value is Theme {
 function readInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'dark'
 
-  const currentTheme = document.documentElement.dataset.theme
-  if (isTheme(currentTheme ?? null)) return currentTheme
+  const currentTheme = document.documentElement.dataset.theme ?? null
+  if (isTheme(currentTheme)) return currentTheme
 
   const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
   if (isTheme(storedTheme)) return storedTheme
