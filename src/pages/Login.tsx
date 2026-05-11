@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { motion } from 'framer-motion'
 import {
+  AlertTriangle,
   ArrowLeft,
   Building2,
   Eye,
@@ -112,12 +113,24 @@ function FormField({ label, icon, error, rightSlot, id, ...props }: InputProps) 
 
 export default function Login() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [mode, setMode] = useState<Mode>('login')
   const [showPw, setShowPw] = useState(false)
   const [showPw2, setShowPw2] = useState(false)
   const [password, setPassword] = useState('')
+  const [oauthError, setOauthError] = useState<string | null>(null)
 
   const isRegister = mode === 'register'
+
+  useEffect(() => {
+    const err = searchParams.get('oauth_error')
+    if (err) {
+      setOauthError(err)
+      const next = new URLSearchParams(searchParams)
+      next.delete('oauth_error')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -160,6 +173,32 @@ export default function Login() {
             ? 'Join 1,200+ employers verifying smarter.'
             : 'Welcome back to the forensic engine.'}
         </p>
+
+        {oauthError && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 flex items-start gap-3 rounded-2xl border border-status-fake/30 bg-status-fake-bg p-4"
+          >
+            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-status-fake" />
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-status-fake">
+                Google Sign-In Failed
+              </p>
+              <p className="mt-1 break-words text-xs font-medium text-ink-secondary">
+                {oauthError}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOauthError(null)}
+              aria-label="Dismiss"
+              className="font-mono text-[10px] font-bold uppercase text-ink-muted hover:text-ink-primary"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           {isRegister && (
