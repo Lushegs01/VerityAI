@@ -1,29 +1,20 @@
 <!doctype html>
-<html lang="en" class="dark" data-theme="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#070B17" />
-    <title>Verity - AI-Powered Verification for a Trust-First Economy</title>
-    <meta name="description" content="Verity helps institutions verify documents, identities, payments and risk signals using intelligent automation and secure financial workflows." />
+    <meta name="theme-color" content="#F8FAFC" />
+    <title>VerityAI — Forensic Credential Verification</title>
+    <meta name="description" content="VerityAI verifies academic and professional credentials in seconds using forensic AI, document anomaly detection, and institution-grade trust scoring." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet" />
   </head>
   <body>
     <script>
       (() => {
-        const key = 'verity-theme';
-        let storedTheme = null;
-        try {
-          storedTheme = localStorage.getItem(key);
-        } catch {
-          storedTheme = null;
-        }
-        const theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : 'dark';
-        document.documentElement.dataset.theme = theme;
-        document.documentElement.classList.toggle('dark', theme === 'dark');
-        document.documentElement.style.colorScheme = theme;
+        document.documentElement.dataset.theme = 'light';
+        document.documentElement.style.colorScheme = 'light';
       })();
     </script>
     <div id="root"></div>

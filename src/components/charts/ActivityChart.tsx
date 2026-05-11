@@ -1,6 +1,6 @@
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -14,21 +14,21 @@ interface ActivityData {
 }
 
 export default function ActivityChart({ data }: { data: ActivityData[] }) {
-  const gridColor = 'hsl(var(--surface-border))'
-  const mutedText = 'hsl(var(--ink-muted))'
-  const tooltipBackground = 'hsl(var(--surface-elevated))'
-  const tooltipText = 'hsl(var(--ink-primary))'
+  const gridColor = '#E2E8F0'
+  const mutedText = '#475569'
+  const tooltipBackground = '#FFFFFF'
+  const tooltipText = '#0F172A'
 
   if (!data || data.length === 0) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-2 text-sm text-ink-muted">
-        <div className="size-10 rounded-xl border border-surface-border bg-surface-elevated flex items-center justify-center">
+        <div className="flex size-10 items-center justify-center rounded-xl border border-surface-border bg-surface-elevated">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 17 9 11 13 15 21 7" />
             <polyline points="14 7 21 7 21 14" />
           </svg>
         </div>
-        <p>No activity yet</p>
+        <p className="font-mono text-[10px] font-bold uppercase tracking-widest">No activity yet</p>
         <p className="text-[11px] text-ink-muted">Run your first verification to see trends</p>
       </div>
     )
@@ -36,50 +36,40 @@ export default function ActivityChart({ data }: { data: ActivityData[] }) {
 
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+      <BarChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
         <defs>
-          <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#E51E56" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="#E51E56" stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#FF3D6E" />
-            <stop offset="100%" stopColor="#E51E56" />
+          <linearGradient id="activityFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10B981" stopOpacity={1} />
+            <stop offset="100%" stopColor="#059669" stopOpacity={0.85} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 6" stroke={gridColor} vertical={false} />
         <XAxis
           dataKey="date"
-          tick={{ fill: mutedText, fontSize: 11 }}
+          tick={{ fill: mutedText, fontSize: 11, fontFamily: 'JetBrains Mono' }}
           axisLine={{ stroke: gridColor }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: mutedText, fontSize: 11 }}
+          tick={{ fill: mutedText, fontSize: 11, fontFamily: 'JetBrains Mono' }}
           axisLine={false}
           tickLine={false}
           allowDecimals={false}
         />
         <Tooltip
-          cursor={{ stroke: 'hsl(var(--primary) / 0.25)', strokeWidth: 1 }}
+          cursor={{ fill: 'rgba(5, 150, 105, 0.05)' }}
           contentStyle={{
             backgroundColor: tooltipBackground,
             border: `1px solid ${gridColor}`,
             borderRadius: '12px',
             fontSize: '12px',
             color: tooltipText,
-            boxShadow: '0 12px 32px -12px rgba(0,0,0,0.5)',
+            boxShadow: '0 12px 32px -12px rgba(0,0,0,0.15)',
           }}
           formatter={(value: number) => [`${value} verifications`, 'Count']}
         />
-        <Area
-          type="monotone"
-          dataKey="count"
-          stroke="url(#strokeGradient)"
-          strokeWidth={2.5}
-          fill="url(#activityGradient)"
-        />
-      </AreaChart>
+        <Bar dataKey="count" fill="url(#activityFill)" radius={[6, 6, 0, 0]} maxBarSize={28} />
+      </BarChart>
     </ResponsiveContainer>
   )
 }

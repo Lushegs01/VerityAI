@@ -14,7 +14,7 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(
       <div
         ref={ref}
         className={cn(
-          'rounded-2xl bg-surface-card transition-all duration-200',
+          'rounded-2xl bg-surface-card shadow-sm transition-all duration-200',
           bordered && 'border border-surface-border',
           glass && 'glass',
           hover && 'hover:border-primary/30 hover:shadow-soft hover:-translate-y-0.5',
@@ -30,6 +30,9 @@ export const Panel = forwardRef<HTMLDivElement, PanelProps>(
 )
 Panel.displayName = 'Panel'
 
+/** Alias matching the spec naming. */
+export const Card = Panel
+
 export function PanelHeader({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
@@ -44,7 +47,7 @@ export function PanelHeader({ className, children, ...props }: HTMLAttributes<HT
 export function PanelTitle({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn('font-display text-base font-semibold text-ink-primary tracking-tight', className)}
+      className={cn('font-display text-base font-bold uppercase tracking-tight text-ink-primary', className)}
       {...props}
     >
       {children}
