@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100..900;1,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-primary: #059669;
+  --color-primary-dark: #047857;
+  --color-primary-light: #10B981;
+  --color-primary-glow: rgba(5, 150, 105, 0.1);
+
+  --color-surface-base: #F8FAFC;
+  --color-surface-card: #FFFFFF;
+  --color-surface-elevated: #F1F5F9;
+  --color-surface-border: #E2E8F0;
+  --color-surface-hover: #F8FAFC;
+
+  --color-accent-cyan: #0E7490;
+  --color-accent-cyan-glow: rgba(14, 116, 144, 0.08);
+
+  --color-status-verified: #059669;
+  --color-status-verified-bg: rgba(5, 150, 105, 0.12);
+  --color-status-suspicious: #B45309;
+  --color-status-suspicious-bg: rgba(180, 83, 9, 0.1);
+  --color-status-fake: #B91C1C;
+  --color-status-fake-bg: rgba(185, 28, 28, 0.1);
+
+  --color-ink-primary: #0F172A;
+  --color-ink-secondary: #334155;
+  --color-ink-muted: #475569;
+
+  /* Typography */
+  --font-display: "Outfit", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-surface-base text-ink-primary font-body antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold tracking-tight;
+  }
+
+  .noise-overlay {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+  }
+}
