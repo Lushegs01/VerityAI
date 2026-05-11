@@ -80,15 +80,27 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="font-display text-2xl text-ink-primary">
-          Welcome back, {user?.fullName?.split(' ')[0] || user?.name?.split(' ')[0] || 'User'}
-        </h1>
-        <p className="text-sm text-ink-muted mt-1">
-          Here's what's happening with your verifications today.
-        </p>
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+      >
+        <div>
+          <h1 className="font-display text-2xl text-ink-primary sm:text-3xl">
+            Welcome back, {user?.fullName?.split(' ')[0] || user?.name?.split(' ')[0] || 'User'}
+          </h1>
+          <p className="text-sm text-ink-muted mt-1">
+            Here's what's happening with your verifications today.
+          </p>
+        </div>
+        <Link
+          to="/verify"
+          className="inline-flex min-h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
+        >
+          Verify Certificate
+        </Link>
       </motion.div>
 
       {/* Stats Grid */}
@@ -102,10 +114,10 @@ export default function Dashboard() {
           <motion.div
             key={card.label}
             variants={item}
-            className={`p-5 rounded-2xl border ${card.border} bg-surface-card`}
+            className={`rounded-lg border ${card.border} bg-surface-card p-5 transition-colors hover:border-surface-border`}
           >
             <div className="flex items-center justify-between mb-3">
-              <div className={`p-2 rounded-lg ${card.bg}`}>
+              <div className={`rounded-lg p-2 ${card.bg}`}>
                 <card.icon size={18} className={card.color} />
               </div>
               <ArrowUpRight size={14} className="text-ink-muted" />
@@ -126,7 +138,7 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="lg:col-span-2 bg-surface-card border border-surface-border rounded-2xl p-6"
+          className="rounded-lg border border-surface-border bg-surface-card p-5 sm:p-6 lg:col-span-2"
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-lg text-ink-primary">
@@ -142,15 +154,15 @@ export default function Dashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-surface-card border border-surface-border rounded-2xl p-6"
+          className="rounded-lg border border-surface-border bg-surface-card p-5 sm:p-6"
         >
           <h2 className="font-display text-lg text-ink-primary mb-4">
             Quick Actions
           </h2>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             <Link
               to="/verify"
-              className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors group"
+              className="group flex min-h-12 items-center gap-3 rounded-lg border border-primary/15 bg-primary/5 px-3 transition-colors hover:bg-primary/10"
             >
               <ShieldCheck size={18} className="text-primary" />
               <span className="text-sm font-medium text-ink-primary">Verify Certificate</span>
@@ -158,7 +170,7 @@ export default function Dashboard() {
             </Link>
             <Link
               to="/wallet"
-              className="flex items-center gap-3 p-3 rounded-xl bg-surface-elevated border border-surface-border hover:border-primary/20 transition-colors group"
+              className="group flex min-h-12 items-center gap-3 rounded-lg border border-surface-border bg-surface-elevated px-3 transition-colors hover:border-primary/20"
             >
               <Wallet size={18} className="text-primary" />
               <span className="text-sm font-medium text-ink-primary">Top Up Wallet</span>
@@ -196,7 +208,7 @@ export default function Dashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="bg-surface-card border border-surface-border rounded-2xl overflow-hidden"
+        className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
       >
         <div className="p-6 border-b border-surface-border flex items-center justify-between">
           <h2 className="font-display text-lg text-ink-primary">

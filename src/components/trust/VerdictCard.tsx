@@ -108,7 +108,7 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="bg-surface-card border border-surface-border rounded-2xl overflow-hidden"
+      className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
     >
       {/* Header: Trust Score + Basic Info */}
       <div className="p-6 border-b border-surface-border">
@@ -225,7 +225,7 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
 
         {/* AI Reasoning */}
         {certificate.aiReasoning && (
-          <div className="mt-4 p-3 rounded-xl bg-surface-elevated border-l-2 border-primary">
+          <div className="mt-4 rounded-lg border border-surface-border bg-surface-elevated p-3">
             <p className="text-xs text-ink-muted uppercase tracking-wider mb-1">AI Reasoning</p>
             <p className="text-sm text-ink-primary italic leading-relaxed">
               {certificate.aiReasoning}
@@ -252,7 +252,7 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 1.2 + i * 0.1 }}
-                className={`p-3 rounded-lg border ${severityColor(flag.severity)}`}
+                className={`rounded-lg border p-3 ${severityColor(flag.severity)}`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
@@ -287,7 +287,7 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
       <div className="p-4 flex flex-wrap gap-2">
         <button
           onClick={downloadReport}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
         >
           <Download size={15} />
           Download Report
@@ -296,14 +296,14 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
           onClick={() => {
             void shareReport()
           }}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-elevated border border-surface-border text-ink-primary text-sm font-medium hover:bg-surface-hover transition-colors"
+          className="flex items-center gap-2 rounded-lg border border-surface-border bg-surface-elevated px-4 py-2 text-sm font-medium text-ink-primary transition-colors hover:bg-surface-hover"
         >
           <Share2 size={15} />
           Share
         </button>
         <button
           onClick={() => toast('Dispute request noted for manual review')}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-elevated border border-surface-border text-ink-secondary text-sm font-medium hover:bg-surface-hover transition-colors"
+          className="flex items-center gap-2 rounded-lg border border-surface-border bg-surface-elevated px-4 py-2 text-sm font-medium text-ink-secondary transition-colors hover:bg-surface-hover"
         >
           <Flag size={15} />
           Dispute

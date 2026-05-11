@@ -14,6 +14,7 @@ import {
   X,
   ArrowRight,
 } from 'lucide-react'
+import ThemeToggle from '@/components/layout/ThemeToggle'
 import TrustScoreRing from '@/components/trust/TrustScoreRing'
 
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
@@ -97,7 +98,7 @@ export default function Landing() {
   const currentDemo = demoMode === 'genuine' ? genuineResult : fakeResult
 
   return (
-    <div className="min-h-screen bg-surface-base noise-overlay">
+    <div className="min-h-screen bg-surface-base">
       {/* NAV */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
@@ -120,6 +121,7 @@ export default function Landing() {
             <a href="#types" className="text-sm text-ink-secondary hover:text-ink-primary transition-colors">Certificates</a>
             <a href="#pricing" className="text-sm text-ink-secondary hover:text-ink-primary transition-colors">Pricing</a>
             <Link to="/login" className="text-sm text-ink-secondary hover:text-ink-primary transition-colors">Log In</Link>
+            <ThemeToggle />
             <Link
               to="/login"
               className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-dark transition-colors"
@@ -128,12 +130,18 @@ export default function Landing() {
             </Link>
           </div>
 
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-ink-secondary"
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            <ThemeToggle />
+            <button
+              type="button"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="flex size-10 items-center justify-center rounded-lg border border-surface-border bg-surface-elevated text-ink-secondary transition-colors hover:text-ink-primary"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
 
         <AnimatePresence>
@@ -142,14 +150,14 @@ export default function Landing() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="md:hidden bg-surface-card border-b border-surface-border overflow-hidden"
+              className="overflow-hidden border-b border-surface-border bg-surface-card md:hidden"
             >
-              <div className="p-4 space-y-3">
-                <a href="#how" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-ink-secondary py-2">How It Works</a>
-                <a href="#types" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-ink-secondary py-2">Certificates</a>
-                <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block text-sm text-ink-secondary py-2">Pricing</a>
-                <Link to="/login" className="block text-sm text-primary py-2 font-medium">Log In</Link>
-                <Link to="/login" className="block text-center px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium">Get Started</Link>
+              <div className="space-y-2 p-4">
+                <a href="#how" onClick={() => setMobileMenuOpen(false)} className="block rounded-lg border border-transparent px-3 py-2.5 text-sm text-ink-secondary transition-colors hover:border-surface-border hover:bg-surface-elevated hover:text-ink-primary">How It Works</a>
+                <a href="#types" onClick={() => setMobileMenuOpen(false)} className="block rounded-lg border border-transparent px-3 py-2.5 text-sm text-ink-secondary transition-colors hover:border-surface-border hover:bg-surface-elevated hover:text-ink-primary">Certificates</a>
+                <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block rounded-lg border border-transparent px-3 py-2.5 text-sm text-ink-secondary transition-colors hover:border-surface-border hover:bg-surface-elevated hover:text-ink-primary">Pricing</a>
+                <Link to="/login" className="block rounded-lg border border-surface-border bg-surface-elevated px-3 py-2.5 text-sm font-medium text-primary">Log In</Link>
+                <Link to="/login" className="block rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-dark">Get Started</Link>
               </div>
             </motion.div>
           )}
@@ -157,24 +165,8 @@ export default function Landing() {
       </nav>
 
       {/* HERO */}
-      <section className="relative pt-32 pb-20 px-4 sm:px-6 overflow-hidden">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div
-            className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, #E51E56 0%, transparent 70%)' }}
-            animate={{ x: [0, 50, 0], y: [0, -30, 0], scale: [1, 1.1, 1] }}
-            transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-          />
-          <motion.div
-            className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] rounded-full opacity-5"
-            style={{ background: 'radial-gradient(circle, #00D4FF 0%, transparent 70%)' }}
-            animate={{ x: [0, -40, 0], y: [0, 40, 0], scale: [1, 1.15, 1] }}
-            transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          />
-        </div>
-
-        <div className="max-w-7xl mx-auto relative z-10">
+      <section className="relative overflow-hidden border-b border-surface-border px-4 pb-20 pt-32 sm:px-6">
+        <div className="relative z-10 mx-auto max-w-7xl">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -197,14 +189,14 @@ export default function Landing() {
               <div className="flex flex-wrap gap-4">
                 <Link
                   to="/login"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dark transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark"
                 >
                   Verify a Certificate
                   <ArrowRight size={16} />
                 </Link>
                 <a
                   href="#demo"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-surface-border text-ink-primary font-medium hover:bg-surface-hover transition-colors"
+                  className="inline-flex items-center gap-2 rounded-lg border border-surface-border px-6 py-3 font-medium text-ink-primary transition-colors hover:bg-surface-hover"
                 >
                   See It In Action
                 </a>
@@ -217,17 +209,37 @@ export default function Landing() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="hidden lg:flex justify-center"
             >
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary/5 rounded-full blur-3xl scale-150" />
-                <div className="relative bg-surface-card border border-surface-border rounded-2xl p-8 backdrop-blur-sm">
-                  <TrustScoreRing score={87} verdict="VERIFIED" size={220} />
-                  <div className="mt-4 text-center">
+              <div className="relative w-full max-w-sm rounded-lg border border-surface-border bg-surface-card">
+                <div className="flex items-center justify-between border-b border-surface-border px-5 py-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Verification report</p>
+                    <p className="mt-1 text-sm font-medium text-ink-primary">Live certificate scan</p>
+                  </div>
+                  <span className="rounded-md border border-status-verified/20 bg-status-verified/10 px-2 py-1 text-[10px] font-bold uppercase text-status-verified">
+                    Clean
+                  </span>
+                </div>
+                <div className="p-8">
+                  <TrustScoreRing score={87} verdict="VERIFIED" size={210} />
+                  <div className="mt-5 text-center">
                     <p className="text-sm font-medium text-ink-primary">Adebayo Adeniran</p>
                     <p className="text-xs text-ink-muted">BSc - University of Lagos</p>
-                    <span className="inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-status-verified/10 text-status-verified border border-status-verified/20">
+                    <span className="mt-3 inline-block rounded-full border border-status-verified/20 bg-status-verified/10 px-3 py-1 text-[10px] font-bold uppercase text-status-verified">
                       VERIFIED
                     </span>
                   </div>
+                </div>
+                <div className="grid grid-cols-3 border-t border-surface-border text-center">
+                  {[
+                    { label: 'AI match', value: '96%' },
+                    { label: 'Checks', value: '18' },
+                    { label: 'Time', value: '12s' },
+                  ].map((metric) => (
+                    <div key={metric.label} className="border-r border-surface-border px-3 py-4 last:border-r-0">
+                      <p className="font-mono text-sm font-bold text-ink-primary">{metric.value}</p>
+                      <p className="mt-1 text-[10px] uppercase tracking-wider text-ink-muted">{metric.label}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </motion.div>
@@ -272,12 +284,12 @@ export default function Landing() {
               <motion.div
                 key={item.step}
                 whileHover={{ y: -4 }}
-                className="relative p-6 bg-surface-card border border-surface-border rounded-2xl group"
+                className="group relative rounded-lg border border-surface-border bg-surface-card p-6 transition-colors hover:border-primary/20"
               >
                 <div className="absolute top-4 right-4 text-5xl font-display font-bold text-surface-elevated group-hover:text-primary/5 transition-colors">
                   {item.step}
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
                   <item.icon size={22} className="text-primary" />
                 </div>
                 <h3 className="font-display text-lg text-ink-primary mb-2">{item.title}</h3>
@@ -294,7 +306,7 @@ export default function Landing() {
           <div className="text-center mb-10">
             <h2 className="font-display text-3xl text-ink-primary mb-3">See It In Action</h2>
             <p className="text-ink-secondary mb-6">Toggle between genuine and fake certificate analysis</p>
-            <div className="inline-flex gap-2 p-1 rounded-xl bg-surface-elevated border border-surface-border">
+            <div className="inline-flex gap-2 rounded-lg border border-surface-border bg-surface-elevated p-1">
               <button
                 onClick={() => setDemoMode('genuine')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -324,7 +336,7 @@ export default function Landing() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-surface-card border border-surface-border rounded-2xl p-8"
+              className="rounded-lg border border-surface-border bg-surface-card p-6 sm:p-8"
             >
               <div className="flex flex-col lg:flex-row gap-8 items-center">
                 <div className="flex-shrink-0">
@@ -397,9 +409,9 @@ export default function Landing() {
               <motion.div
                 key={ct.name}
                 whileHover={{ scale: 1.05 }}
-                className="flex flex-col items-center gap-2 p-4 bg-surface-card border border-surface-border rounded-xl hover:border-primary/20 transition-colors"
+                className="flex flex-col items-center gap-2 rounded-lg border border-surface-border bg-surface-card p-4 transition-colors hover:border-primary/20"
               >
-                <div className="w-10 h-10 rounded-lg bg-surface-elevated flex items-center justify-center">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-surface-elevated">
                   <ct.icon size={18} className="text-primary" />
                 </div>
                 <span className="text-xs font-medium text-ink-primary text-center">{ct.name}</span>
@@ -425,7 +437,7 @@ export default function Landing() {
               <motion.div
                 key={plan.name}
                 whileHover={{ y: -4 }}
-                className={`relative p-6 rounded-2xl border ${
+                className={`relative rounded-lg border p-6 ${
                   plan.highlighted
                     ? 'border-primary bg-primary/5'
                     : 'border-surface-border bg-surface-card'
@@ -453,7 +465,7 @@ export default function Landing() {
                   ))}
                 </ul>
                 <button
-                  className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  className={`w-full rounded-lg py-2.5 text-sm font-medium transition-colors ${
                     plan.highlighted
                       ? 'bg-primary text-white hover:bg-primary-dark'
                       : 'bg-surface-elevated border border-surface-border text-ink-primary hover:bg-surface-hover'

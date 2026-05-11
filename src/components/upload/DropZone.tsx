@@ -46,7 +46,7 @@ export default function DropZone({
       <div
         {...getRootProps()}
         className={`
-          relative border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer
+          relative cursor-pointer rounded-lg border border-dashed p-8 text-center
           transition-all duration-200 overflow-hidden
           ${isDragActive && !isDragReject
             ? 'border-primary bg-primary/5'
@@ -56,13 +56,6 @@ export default function DropZone({
           }
         `}
       >
-        {/* Subtle gradient glow on hover */}
-        <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at center, rgba(229, 30, 86, 0.03) 0%, transparent 70%)',
-          }}
-        />
-
         <input {...getInputProps()} />
 
         <motion.div
@@ -71,10 +64,10 @@ export default function DropZone({
           className="relative z-10"
         >
           <div className={`
-            w-14 h-14 mx-auto mb-4 rounded-xl flex items-center justify-center
+            mx-auto mb-4 flex size-14 items-center justify-center rounded-lg border
             ${isDragActive
-              ? 'bg-primary/10 text-primary'
-              : 'bg-surface-elevated text-ink-muted'
+              ? 'border-primary/20 bg-primary/10 text-primary'
+              : 'border-surface-border bg-surface-elevated text-ink-muted'
             }
           `}>
             <Upload size={24} />
@@ -84,11 +77,11 @@ export default function DropZone({
           <p className="text-xs text-ink-muted">{sublabel}</p>
 
           <div className="flex items-center justify-center gap-3 mt-4">
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-elevated">
+            <div className="flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-elevated px-2 py-1">
               <FileImage size={12} className="text-ink-muted" />
               <span className="text-[10px] text-ink-muted">JPG, PNG, WEBP</span>
             </div>
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-elevated">
+            <div className="flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-elevated px-2 py-1">
               <FileText size={12} className="text-ink-muted" />
               <span className="text-[10px] text-ink-muted">PDF</span>
             </div>

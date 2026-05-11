@@ -66,7 +66,7 @@ export default function Wallet() {
     <div className="mx-auto w-full max-w-6xl space-y-5 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="font-display text-2xl text-ink-primary">Wallet</h1>
+        <h1 className="font-display text-2xl text-ink-primary sm:text-3xl">Wallet</h1>
         <p className="text-sm text-ink-muted mt-1">
           Manage your verification credits and payment methods.
         </p>
@@ -77,24 +77,30 @@ export default function Wallet() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl border border-surface-border bg-gradient-to-br from-surface-card to-surface-elevated p-5 sm:p-6 lg:col-span-2"
+          className="relative overflow-hidden rounded-lg border border-surface-border bg-surface-card p-5 sm:p-6 lg:col-span-2"
         >
-          <div className="absolute top-0 right-0 w-64 h-64 opacity-5">
-            <WalletIcon className="w-64 h-64" />
-          </div>
-          <div className="relative z-10">
-            <p className="text-xs text-ink-muted uppercase tracking-wider font-semibold mb-2">
-              Available Balance
-            </p>
-            <h2 className="mb-5 break-words font-mono text-3xl font-bold text-ink-primary sm:mb-6 sm:text-4xl">
-              N{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </h2>
+          <div className="absolute inset-x-0 top-0 h-1 bg-primary" />
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="mb-4 flex size-11 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+                <WalletIcon className="text-primary" size={21} />
+              </div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                Available Balance
+              </p>
+              <h2 className="break-words font-mono text-3xl font-bold text-ink-primary sm:text-4xl">
+                N{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </h2>
+              <p className="mt-2 text-xs text-ink-muted">
+                Ready for {Math.floor(balance / 500).toLocaleString('en-NG')} certificate checks
+              </p>
+            </div>
             <div className="flex gap-3">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setShowTopUp(true)}
-                className="flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
+                className="flex min-h-11 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
               >
                 <Plus size={16} />
                 Top Up
@@ -108,7 +114,7 @@ export default function Wallet() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="rounded-2xl border border-surface-border bg-surface-card p-5 sm:p-6"
+          className="rounded-lg border border-surface-border bg-surface-card p-5 sm:p-6"
         >
           <div className="flex items-center gap-2 mb-4">
             <Building2 className="text-ink-muted w-4 h-4" />
@@ -119,7 +125,7 @@ export default function Wallet() {
           <p className="text-sm text-ink-secondary mb-4">
             Fund your wallet via bank transfer
           </p>
-          <div className="rounded-xl border border-surface-border bg-surface-elevated p-4">
+          <div className="rounded-lg border border-surface-border bg-surface-elevated p-4">
             <p className="text-xs text-ink-muted mb-1">Bank</p>
             <p className="text-sm font-medium text-ink-primary mb-3">GTBank</p>
             <p className="text-xs text-ink-muted mb-1">Account Number</p>
@@ -133,7 +139,7 @@ export default function Wallet() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="overflow-hidden rounded-2xl border border-surface-border bg-surface-card"
+        className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
       >
         <div className="p-6 border-b border-surface-border">
           <h2 className="font-display text-lg text-ink-primary">

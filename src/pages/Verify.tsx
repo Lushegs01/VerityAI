@@ -111,14 +111,14 @@ export default function Verify() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="mx-auto max-w-3xl">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-6"
       >
-        <h1 className="font-display text-2xl text-ink-primary flex items-center gap-3">
+        <h1 className="flex items-center gap-3 font-display text-2xl text-ink-primary sm:text-3xl">
           <ShieldCheck size={24} className="text-primary" />
           Verify Certificate
         </h1>
@@ -132,7 +132,7 @@ export default function Verify() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mb-4 p-4 rounded-xl bg-status-fake/5 border border-status-fake/20 flex items-center gap-3"
+          className="mb-4 flex items-center gap-3 rounded-lg border border-status-fake/20 bg-status-fake/5 p-4"
         >
           <AlertCircle size={18} className="text-status-fake flex-shrink-0" />
           <p className="text-sm text-ink-primary">
@@ -155,13 +155,13 @@ export default function Verify() {
             {!file ? (
               <DropZone onFileSelect={onFileSelect} />
             ) : (
-              <div className="bg-surface-card border border-surface-border rounded-2xl p-4">
+              <div className="rounded-lg border border-surface-border bg-surface-card p-4">
                 <div className="flex items-center gap-4">
                   {previewUrl && file.type.startsWith('image/') && (
                     <img
                       src={previewUrl}
                       alt="Preview"
-                      className="w-24 h-24 object-cover rounded-lg"
+                      className="size-24 rounded-lg object-cover"
                     />
                   )}
                   <div className="flex-1">
@@ -184,8 +184,8 @@ export default function Verify() {
             {file && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 10 }}
-                className="bg-surface-card border border-surface-border rounded-2xl p-6 space-y-4"
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4 rounded-lg border border-surface-border bg-surface-card p-5 sm:p-6"
               >
                 <h3 className="text-sm font-semibold text-ink-primary uppercase tracking-wider">
                   Certificate Details (optional)
@@ -199,7 +199,7 @@ export default function Verify() {
                     <select
                       value={certificateType}
                       onChange={(e) => setCertificateType(e.target.value as CertificateType | '')}
-                      className="w-full bg-surface-elevated border border-surface-border rounded-lg px-3 py-2.5 text-sm text-ink-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      className="w-full rounded-lg border border-surface-border bg-surface-elevated px-3 py-2.5 text-sm text-ink-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
                       <option value="">Select type...</option>
                       <option value="WAEC">WAEC</option>
@@ -224,7 +224,7 @@ export default function Verify() {
                       value={applicantName}
                       onChange={(e) => setApplicantName(e.target.value)}
                       placeholder="Enter candidate name"
-                      className="w-full bg-surface-elevated border border-surface-border rounded-lg px-3 py-2.5 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      className="w-full rounded-lg border border-surface-border bg-surface-elevated px-3 py-2.5 text-sm text-ink-primary placeholder:text-ink-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export default function Verify() {
                     whileTap={{ scale: 0.98 }}
                     onClick={handleVerify}
                     disabled={!canVerify}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex min-h-11 items-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Zap size={16} />
                     Start Verification
@@ -287,7 +287,7 @@ export default function Verify() {
             <div className="flex justify-center">
               <button
                 onClick={reset}
-                className="px-6 py-2.5 rounded-xl bg-surface-elevated border border-surface-border text-sm font-medium text-ink-primary hover:bg-surface-hover transition-colors"
+                className="rounded-lg border border-surface-border bg-surface-elevated px-6 py-2.5 text-sm font-medium text-ink-primary transition-colors hover:bg-surface-hover"
               >
                 Verify Another
               </button>

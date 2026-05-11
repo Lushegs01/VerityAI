@@ -46,22 +46,22 @@ export default function App() {
         position="top-right"
         toastOptions={{
           style: {
-            background: '#161B27',
-            color: '#F0F4FF',
-            border: '1px solid #1E2535',
+            background: 'hsl(var(--surface-elevated))',
+            color: 'hsl(var(--ink-primary))',
+            border: '1px solid hsl(var(--surface-border))',
             fontFamily: 'DM Sans, sans-serif',
             fontSize: '14px',
           },
           success: {
             iconTheme: {
               primary: '#00C896',
-              secondary: '#161B27',
+              secondary: 'hsl(var(--surface-elevated))',
             },
           },
           error: {
             iconTheme: {
               primary: '#FF4757',
-              secondary: '#161B27',
+              secondary: 'hsl(var(--surface-elevated))',
             },
           },
         }}
