@@ -20,7 +20,11 @@ const DEFAULT_BASE_URL = 'https://sandbox-api-d.squadco.com'
 
 function getConfig() {
   const secretKey = process.env.SQUAD_SECRET_KEY ?? ''
-  const baseUrl = (process.env.SQUAD_BASE_URL ?? DEFAULT_BASE_URL).replace(/\/$/, '')
+  // Use `||` not `??` so an empty-string env var (common when the key is
+  // declared without a value in Render) still falls back to the default —
+  // otherwise fetch() tries to parse `/transaction/initiate` as an absolute
+  // URL and throws "Failed to parse URL".
+  const baseUrl = (process.env.SQUAD_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, '')
   if (!secretKey) {
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
