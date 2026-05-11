@@ -9,6 +9,7 @@ import {
   Lock,
   ShieldCheck,
   AlertCircle,
+  Search,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { trpc } from '@/providers/trpc'
@@ -76,15 +77,24 @@ function loadSquadWidget(): Promise<void> {
   })
 }
 
+type Stage = 'idle' | 'launching' | 'awaiting' | 'verifying'
+
 export default function TopUpModal({ onClose }: TopUpModalProps) {
   const { user } = useAuth()
   const [method, setMethod] = useState<'card' | 'transfer'>('card')
   const [amount, setAmount] = useState(5000)
   const [customAmount, setCustomAmount] = useState('')
-  const [stage, setStage] = useState<'idle' | 'launching' | 'awaiting' | 'verifying'>('idle')
-  const widgetOpenedRef = useRef(false)
-  const utils = trpc.useUtils()
+  const [stage, setStage] = useState<Stage>('idle')
+  const [activeRef, setActiveRef] = useState<string | null>(null)
 
+  // Stage in a ref so widget callbacks (captured at handler creation time) can
+  // read the latest value without going stale.
+  const stageRef = useRef<Stage>('idle')
+  useEffect(() => {
+    stageRef.current = stage
+  }, [stage])
+
+  const utils = trpc.useUtils()
   const { data: squadConfig } = trpc.wallet.publicConfig.useQuery()
   const finalAmount = customAmount.trim() ? Number(customAmount) : amount
 
@@ -94,6 +104,11 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
       utils.wallet.transactions.invalidate(),
       utils.auth.me.invalidate(),
     ])
+  }
+
+  const resetToIdle = () => {
+    setStage('idle')
+    setActiveRef(null)
   }
 
   // Legacy / fallback simulator path (used by the bank-transfer tab and when
@@ -106,7 +121,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
     },
     onError: (error) => {
       toast.error(error.message)
-      setStage('idle')
+      resetToIdle()
     },
   })
 
@@ -116,12 +131,25 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   const fee = Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015) : 0
   const total = Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015) : 0
 
-  // Reset widget guard when modal closes
-  useEffect(() => {
-    return () => {
-      widgetOpenedRef.current = false
+  const verifyAndCredit = async (reference: string) => {
+    setStage('verifying')
+    try {
+      const result = await confirm.mutateAsync({ reference })
+      await refreshWallet()
+      if (result.status === 'already_completed') {
+        toast.success('Top-up already credited')
+      } else {
+        toast.success(
+          `N${result.amount.toLocaleString('en-NG')} credited (ref ${reference.slice(-6)})`,
+        )
+      }
+      onClose()
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Could not verify payment'
+      toast.error(message)
+      setStage('awaiting')
     }
-  }, [])
+  }
 
   const launchSquad = async () => {
     if (!Number.isFinite(finalAmount) || finalAmount < 500) {
@@ -135,7 +163,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Could not load Squad widget'
       toast.error(message)
-      setStage('idle')
+      resetToIdle()
       return
     }
 
@@ -145,24 +173,24 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Could not start payment'
       toast.error(message)
-      setStage('idle')
+      resetToIdle()
       return
     }
 
     if (!window.squad) {
       toast.error('Squad widget unavailable')
-      setStage('idle')
+      resetToIdle()
       return
     }
 
     if (!params.publicKey) {
       toast.error('Squad public key is not configured.')
-      setStage('idle')
+      resetToIdle()
       return
     }
 
     setStage('awaiting')
-    widgetOpenedRef.current = false
+    setActiveRef(params.reference)
 
     const handler = window.squad({
       key: params.publicKey,
@@ -172,32 +200,24 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
       transaction_ref: params.reference,
       customer_name: params.customerName,
       onLoad: () => {
-        widgetOpenedRef.current = true
+        // widget displayed
       },
       onClose: () => {
-        if (stage === 'awaiting') {
-          setStage('idle')
-          toast('Payment cancelled', { icon: 'i' })
+        // Only react to "close" if we're still in awaiting — onSuccess will
+        // have already transitioned us to "verifying", and we don't want to
+        // clobber that.
+        if (stageRef.current === 'awaiting') {
+          // Keep the reference active so the user can hit "I already paid"
+          // if Squad processed the charge but the widget closed without
+          // firing onSuccess (which we've seen on slow connections).
+          toast(
+            'Widget closed. If you completed the payment, click "I already paid" to verify.',
+            { duration: 6000 },
+          )
         }
       },
-      onSuccess: async () => {
-        setStage('verifying')
-        try {
-          const result = await confirm.mutateAsync({ reference: params.reference })
-          await refreshWallet()
-          if (result.status === 'already_completed') {
-            toast.success('Top-up already credited')
-          } else {
-            toast.success(
-              `N${result.amount.toLocaleString('en-NG')} credited (ref ${params.reference.slice(-6)})`,
-            )
-          }
-          onClose()
-        } catch (e) {
-          const message = e instanceof Error ? e.message : 'Could not verify payment'
-          toast.error(message)
-          setStage('idle')
-        }
+      onSuccess: () => {
+        void verifyAndCredit(params.reference)
       },
     })
     handler.setup()
@@ -216,8 +236,6 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
     if (squadConfig?.squadConfigured) {
       void launchSquad()
     } else {
-      // Server side doesn't have Squad keys — use the simulator so the demo
-      // still works locally / without keys.
       if (!Number.isFinite(finalAmount) || finalAmount < 500) {
         toast.error('Minimum top-up is N500')
         return
@@ -228,22 +246,18 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
 
   const cardButtonLoading =
     initiate.isPending ||
-    confirm.isPending ||
     stage === 'launching' ||
-    stage === 'awaiting' ||
-    stage === 'verifying' ||
     fallbackTopup.isPending
 
   const cardButtonLabel =
     stage === 'launching'
       ? 'Loading checkout…'
-      : stage === 'awaiting'
-        ? 'Awaiting payment…'
-        : stage === 'verifying'
-          ? 'Verifying with Squad…'
-          : squadConfig?.squadConfigured
-            ? 'Pay with Squad'
-            : 'Simulate Card Payment'
+      : squadConfig?.squadConfigured
+        ? 'Pay with Squad'
+        : 'Simulate Card Payment'
+
+  const isAwaiting = stage === 'awaiting' && activeRef !== null
+  const isVerifying = stage === 'verifying'
 
   return (
     <AnimatePresence>
@@ -290,151 +304,202 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
           </div>
 
           <div className="p-6 space-y-5">
-            {/* Method selector */}
-            <div className="grid grid-cols-2 gap-2 rounded-xl border border-surface-border bg-surface-elevated p-1">
-              <button
-                onClick={() => setMethod('card')}
-                className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
-                  method === 'card'
-                    ? 'bg-surface-card text-ink-primary shadow-sm ring-1 ring-surface-border'
-                    : 'text-ink-secondary hover:text-ink-primary'
-                }`}
-              >
-                <CreditCard size={14} />
-                Card payment
-              </button>
-              <button
-                onClick={() => setMethod('transfer')}
-                className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
-                  method === 'transfer'
-                    ? 'bg-surface-card text-ink-primary shadow-sm ring-1 ring-surface-border'
-                    : 'text-ink-secondary hover:text-ink-primary'
-                }`}
-              >
-                <Building2 size={14} />
-                Bank transfer
-              </button>
-            </div>
-
-            {method === 'card' ? (
-              <>
-                <div>
-                  <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">
-                    Select amount
+            {/* Awaiting / verifying overlay — replaces the form to make state obvious */}
+            {(isAwaiting || isVerifying) && activeRef ? (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 text-center">
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/15 text-primary">
+                    {isVerifying ? (
+                      <svg className="size-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      <CreditCard size={20} />
+                    )}
+                  </div>
+                  <p className="mt-3 font-display text-sm font-semibold text-ink-primary">
+                    {isVerifying ? 'Verifying with Squad…' : 'Awaiting payment in widget'}
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {amounts.map((a) => {
-                      const active = amount === a && !customAmount
-                      return (
-                        <button
-                          key={a}
-                          onClick={() => {
-                            setAmount(a)
-                            setCustomAmount('')
-                          }}
-                          className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
-                            active
-                              ? 'border-primary bg-primary/10 text-primary'
-                              : 'border-surface-border bg-surface-elevated text-ink-secondary hover:border-primary/30 hover:bg-surface-hover'
-                          }`}
-                        >
-                          N{a.toLocaleString()}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <div className="mt-3">
-                    <Field
-                      label="Or enter custom amount"
-                      type="number"
-                      value={customAmount}
-                      onChange={(e) => setCustomAmount(e.target.value)}
-                      placeholder="Minimum N500"
-                      min={500}
-                    />
-                  </div>
+                  <p className="mt-1 text-[11px] text-ink-muted">
+                    Reference{' '}
+                    <span className="font-mono text-ink-primary">{activeRef.slice(-8)}</span>
+                  </p>
+                  {isAwaiting && (
+                    <p className="mt-3 text-xs text-ink-muted">
+                      Complete the payment in the Squad popup. If you've already paid but the popup
+                      didn't redirect back, click "I already paid" to verify manually.
+                    </p>
+                  )}
                 </div>
 
-                <div className="rounded-xl border border-surface-border bg-surface-elevated/60 p-4">
-                  <dl className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-ink-muted">Amount</dt>
-                      <dd className="font-mono text-ink-primary">
-                        N{Number.isFinite(finalAmount) ? finalAmount.toLocaleString() : '0'}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-ink-muted">Processing fee (1.5%)</dt>
-                      <dd className="font-mono text-ink-primary">N{fee.toLocaleString()}</dd>
-                    </div>
-                    <div className="flex justify-between border-t border-surface-border pt-2">
-                      <dt className="text-sm font-semibold text-ink-primary">Total</dt>
-                      <dd className="font-mono text-lg font-bold text-ink-primary">
-                        N{total.toLocaleString()}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-
-                {!squadConfig?.squadConfigured && (
-                  <div className="flex items-start gap-2 rounded-xl border border-status-suspicious/25 bg-status-suspicious/8 p-3 text-xs text-ink-primary">
-                    <AlertCircle size={14} className="mt-0.5 shrink-0 text-status-suspicious" />
-                    <span>
-                      Real Squad payments are disabled because the server keys aren't set. This
-                      button will simulate the credit so you can keep demoing the flow.
-                    </span>
+                {isAwaiting && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={resetToIdle}
+                      disabled={confirm.isPending}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => void verifyAndCredit(activeRef)}
+                      loading={confirm.isPending}
+                      leftIcon={<Search size={14} />}
+                    >
+                      I already paid
+                    </Button>
                   </div>
                 )}
+              </div>
+            ) : (
+              <>
+                {/* Method selector */}
+                <div className="grid grid-cols-2 gap-2 rounded-xl border border-surface-border bg-surface-elevated p-1">
+                  <button
+                    onClick={() => setMethod('card')}
+                    className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
+                      method === 'card'
+                        ? 'bg-surface-card text-ink-primary shadow-sm ring-1 ring-surface-border'
+                        : 'text-ink-secondary hover:text-ink-primary'
+                    }`}
+                  >
+                    <CreditCard size={14} />
+                    Card payment
+                  </button>
+                  <button
+                    onClick={() => setMethod('transfer')}
+                    className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
+                      method === 'transfer'
+                        ? 'bg-surface-card text-ink-primary shadow-sm ring-1 ring-surface-border'
+                        : 'text-ink-secondary hover:text-ink-primary'
+                    }`}
+                  >
+                    <Building2 size={14} />
+                    Bank transfer
+                  </button>
+                </div>
 
-                <Button
-                  fullWidth
-                  size="lg"
-                  onClick={handleCardSubmit}
-                  loading={cardButtonLoading}
-                  leftIcon={<Zap size={14} />}
-                  disabled={!user?.email && squadConfig?.squadConfigured}
-                >
-                  {cardButtonLabel}
-                </Button>
+                {method === 'card' ? (
+                  <>
+                    <div>
+                      <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">
+                        Select amount
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {amounts.map((a) => {
+                          const active = amount === a && !customAmount
+                          return (
+                            <button
+                              key={a}
+                              onClick={() => {
+                                setAmount(a)
+                                setCustomAmount('')
+                              }}
+                              className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                                active
+                                  ? 'border-primary bg-primary/10 text-primary'
+                                  : 'border-surface-border bg-surface-elevated text-ink-secondary hover:border-primary/30 hover:bg-surface-hover'
+                              }`}
+                            >
+                              N{a.toLocaleString()}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <div className="mt-3">
+                        <Field
+                          label="Or enter custom amount"
+                          type="number"
+                          value={customAmount}
+                          onChange={(e) => setCustomAmount(e.target.value)}
+                          placeholder="Minimum N500"
+                          min={500}
+                        />
+                      </div>
+                    </div>
 
-                {squadConfig?.squadConfigured && !user?.email && (
-                  <p className="text-center text-[11px] text-status-fake">
-                    No email on your account — add one or use the simulated flow.
-                  </p>
+                    <div className="rounded-xl border border-surface-border bg-surface-elevated/60 p-4">
+                      <dl className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <dt className="text-ink-muted">Amount</dt>
+                          <dd className="font-mono text-ink-primary">
+                            N{Number.isFinite(finalAmount) ? finalAmount.toLocaleString() : '0'}
+                          </dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt className="text-ink-muted">Processing fee (1.5%)</dt>
+                          <dd className="font-mono text-ink-primary">N{fee.toLocaleString()}</dd>
+                        </div>
+                        <div className="flex justify-between border-t border-surface-border pt-2">
+                          <dt className="text-sm font-semibold text-ink-primary">Total</dt>
+                          <dd className="font-mono text-lg font-bold text-ink-primary">
+                            N{total.toLocaleString()}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+
+                    {!squadConfig?.squadConfigured && (
+                      <div className="flex items-start gap-2 rounded-xl border border-status-suspicious/25 bg-status-suspicious/8 p-3 text-xs text-ink-primary">
+                        <AlertCircle size={14} className="mt-0.5 shrink-0 text-status-suspicious" />
+                        <span>
+                          Real Squad payments are disabled because the server keys aren't set. This
+                          button will simulate the credit so you can keep demoing the flow.
+                        </span>
+                      </div>
+                    )}
+
+                    <Button
+                      fullWidth
+                      size="lg"
+                      onClick={handleCardSubmit}
+                      loading={cardButtonLoading}
+                      leftIcon={<Zap size={14} />}
+                      disabled={!user?.email && squadConfig?.squadConfigured}
+                    >
+                      {cardButtonLabel}
+                    </Button>
+
+                    {squadConfig?.squadConfigured && !user?.email && (
+                      <p className="text-center text-[11px] text-status-fake">
+                        No email on your account — add one or use the simulated flow.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center">
+                    <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
+                      <Building2 size={26} className="text-primary" />
+                    </div>
+                    <h3 className="mt-4 font-display text-sm font-semibold text-ink-primary">
+                      GTBank Virtual Account
+                    </h3>
+                    <p className="mt-3 font-mono text-2xl font-bold tracking-tight text-ink-primary">
+                      0012345678
+                    </p>
+                    <p className="mt-1 text-xs text-ink-muted">
+                      Transfer from any Nigerian bank to credit your wallet
+                    </p>
+
+                    <div className="mt-4 rounded-xl border border-surface-border bg-surface-elevated p-3">
+                      <p className="text-[11px] text-ink-muted">
+                        Demo transfers credit through the same wallet ledger used by card payments.
+                      </p>
+                    </div>
+
+                    <Button
+                      fullWidth
+                      size="lg"
+                      className="mt-4"
+                      onClick={submitTransfer}
+                      loading={fallbackTopup.isPending}
+                      leftIcon={<CheckCircle2 size={14} />}
+                    >
+                      Credit Demo Transfer
+                    </Button>
+                  </div>
                 )}
               </>
-            ) : (
-              <div className="text-center">
-                <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
-                  <Building2 size={26} className="text-primary" />
-                </div>
-                <h3 className="mt-4 font-display text-sm font-semibold text-ink-primary">
-                  GTBank Virtual Account
-                </h3>
-                <p className="mt-3 font-mono text-2xl font-bold tracking-tight text-ink-primary">
-                  0012345678
-                </p>
-                <p className="mt-1 text-xs text-ink-muted">
-                  Transfer from any Nigerian bank to credit your wallet
-                </p>
-
-                <div className="mt-4 rounded-xl border border-surface-border bg-surface-elevated p-3">
-                  <p className="text-[11px] text-ink-muted">
-                    Demo transfers credit through the same wallet ledger used by card payments.
-                  </p>
-                </div>
-
-                <Button
-                  fullWidth
-                  size="lg"
-                  className="mt-4"
-                  onClick={submitTransfer}
-                  loading={fallbackTopup.isPending}
-                  leftIcon={<CheckCircle2 size={14} />}
-                >
-                  Credit Demo Transfer
-                </Button>
-              </div>
             )}
 
             <div className="flex items-center justify-between rounded-xl border border-surface-border bg-surface-elevated/50 px-3 py-2.5">

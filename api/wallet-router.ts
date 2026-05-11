@@ -5,10 +5,8 @@ import { and, desc, eq, sql } from 'drizzle-orm'
 import { createRouter, authedQuery, publicQuery } from './middleware'
 import { getDb } from './queries/connection'
 import { users, walletTransactions } from '../db/schema'
-import { env } from './lib/env'
 import {
   getSquadPublicKey,
-  initiateTransaction,
   isSquadConfigured,
   verifyTransaction,
 } from './lib/squad-client'
@@ -120,10 +118,14 @@ export const walletRouter = createRouter({
   /**
    * Initiate a real Squad payment.
    *
-   * Creates a pending walletTransactions row, calls Squad's /transaction/initiate,
-   * and returns the parameters the frontend needs to launch the Squad inline
-   * checkout widget. Wallet is NOT credited here — that happens in
-   * `confirmSquadTopup` once Squad confirms the charge, with the webhook as a
+   * Creates a pending walletTransactions row and returns the parameters the
+   * frontend needs to launch the Squad inline checkout widget. The widget
+   * itself initiates the transaction with Squad using the public key — we
+   * deliberately do NOT call /transaction/initiate here, because doing so
+   * creates a competing pending charge at Squad and causes the widget to hang.
+   *
+   * Wallet is NOT credited here — that happens in `confirmSquadTopup` once
+   * Squad confirms the charge via /transaction/verify, with the webhook as a
    * safety net.
    */
   initiateSquadTopup: authedQuery
@@ -141,11 +143,19 @@ export const walletRouter = createRouter({
         })
       }
 
+      const publicKey = getSquadPublicKey()
+      if (!publicKey) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'SQUAD_PUBLIC_KEY is not configured on the server.',
+        })
+      }
+
       const db = getDb()
       const balanceBefore = Number(ctx.user.walletBalance)
       const reference = `VRT-${nanoid(12).toUpperCase()}`
 
-      // Insert pending tx first — gives us an audit trail even if Squad call fails.
+      // Insert pending tx so we have an audit trail before the widget opens.
       await db.insert(walletTransactions).values({
         employerId: ctx.user.id,
         type: 'topup',
@@ -159,45 +169,13 @@ export const walletRouter = createRouter({
 
       const email = ctx.user.email || `user-${ctx.user.id}@verity.app`
       const customerName = ctx.user.fullName || ctx.user.name || 'Verity User'
-      const callbackUrl = env.appOrigin
-        ? `${env.appOrigin}/wallet?squad_ref=${reference}`
-        : undefined
 
-      try {
-        const result = await initiateTransaction({
-          amountNgn: input.amount,
-          email,
-          reference,
-          customerName,
-          callbackUrl,
-          metadata: {
-            user_id: String(ctx.user.id),
-            purpose: 'wallet-topup',
-          },
-        })
-
-        return {
-          reference,
-          publicKey: getSquadPublicKey(),
-          amount: input.amount,
-          email,
-          customerName,
-          authorizationUrl: result.authorizationUrl,
-        }
-      } catch (error) {
-        // Mark the pending tx as failed so the dashboard reflects reality.
-        try {
-          const pending = await findTransactionByReference(ctx.user.id, reference)
-          if (pending) {
-            await db
-              .update(walletTransactions)
-              .set({ status: 'failed' })
-              .where(eq(walletTransactions.id, pending.id))
-          }
-        } catch {
-          // best-effort cleanup
-        }
-        throw error
+      return {
+        reference,
+        publicKey,
+        amount: input.amount,
+        email,
+        customerName,
       }
     }),
 
