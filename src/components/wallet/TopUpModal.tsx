@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X,
@@ -8,9 +8,11 @@ import {
   CheckCircle2,
   Lock,
   ShieldCheck,
+  AlertCircle,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { trpc } from '@/providers/trpc'
+import { useAuth } from '@/hooks/useAuth'
 import { Button, Field } from '@/components/ui-system'
 
 interface TopUpModalProps {
@@ -18,41 +20,230 @@ interface TopUpModalProps {
 }
 
 const amounts = [1000, 2000, 5000, 10000, 20000, 50000]
+const SQUAD_WIDGET_URL = 'https://checkout.squadco.com/widget/squad.min.js'
+
+interface SquadHandlerOptions {
+  key: string
+  email: string
+  amount: number // kobo
+  currency_code: string
+  transaction_ref: string
+  customer_name?: string
+  onLoad?: () => void
+  onClose?: () => void
+  onSuccess?: (response: { transaction_ref?: string } & Record<string, unknown>) => void
+}
+
+interface SquadHandler {
+  setup: () => void
+  open: () => void
+}
+
+declare global {
+  interface Window {
+    squad?: (opts: SquadHandlerOptions) => SquadHandler
+  }
+}
+
+function loadSquadWidget(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') {
+      reject(new Error('No window context'))
+      return
+    }
+    if (window.squad) {
+      resolve()
+      return
+    }
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${SQUAD_WIDGET_URL}"]`,
+    )
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true })
+      existing.addEventListener(
+        'error',
+        () => reject(new Error('Squad widget failed to load')),
+        { once: true },
+      )
+      return
+    }
+    const script = document.createElement('script')
+    script.src = SQUAD_WIDGET_URL
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('Squad widget failed to load'))
+    document.head.appendChild(script)
+  })
+}
 
 export default function TopUpModal({ onClose }: TopUpModalProps) {
+  const { user } = useAuth()
   const [method, setMethod] = useState<'card' | 'transfer'>('card')
   const [amount, setAmount] = useState(5000)
   const [customAmount, setCustomAmount] = useState('')
+  const [stage, setStage] = useState<'idle' | 'launching' | 'awaiting' | 'verifying'>('idle')
+  const widgetOpenedRef = useRef(false)
   const utils = trpc.useUtils()
 
+  const { data: squadConfig } = trpc.wallet.publicConfig.useQuery()
   const finalAmount = customAmount.trim() ? Number(customAmount) : amount
 
-  const topUpMutation = trpc.wallet.topup.useMutation({
+  const refreshWallet = async () => {
+    await Promise.all([
+      utils.wallet.balance.invalidate(),
+      utils.wallet.transactions.invalidate(),
+      utils.auth.me.invalidate(),
+    ])
+  }
+
+  // Legacy / fallback simulator path (used by the bank-transfer tab and when
+  // Squad isn't configured on the server).
+  const fallbackTopup = trpc.wallet.topup.useMutation({
     onSuccess: async (data) => {
-      await Promise.all([
-        utils.wallet.balance.invalidate(),
-        utils.wallet.transactions.invalidate(),
-        utils.auth.me.invalidate(),
-      ])
+      await refreshWallet()
       toast.success(`N${data.amount.toLocaleString()} added to wallet`)
       onClose()
     },
     onError: (error) => {
       toast.error(error.message)
+      setStage('idle')
     },
   })
 
-  const handleSubmit = () => {
+  const initiate = trpc.wallet.initiateSquadTopup.useMutation()
+  const confirm = trpc.wallet.confirmSquadTopup.useMutation()
+
+  const fee = Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015) : 0
+  const total = Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015) : 0
+
+  // Reset widget guard when modal closes
+  useEffect(() => {
+    return () => {
+      widgetOpenedRef.current = false
+    }
+  }, [])
+
+  const launchSquad = async () => {
     if (!Number.isFinite(finalAmount) || finalAmount < 500) {
       toast.error('Minimum top-up is N500')
       return
     }
 
-    topUpMutation.mutate({ amount: finalAmount, method })
+    setStage('launching')
+    try {
+      await loadSquadWidget()
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Could not load Squad widget'
+      toast.error(message)
+      setStage('idle')
+      return
+    }
+
+    let params: Awaited<ReturnType<typeof initiate.mutateAsync>>
+    try {
+      params = await initiate.mutateAsync({ amount: finalAmount })
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Could not start payment'
+      toast.error(message)
+      setStage('idle')
+      return
+    }
+
+    if (!window.squad) {
+      toast.error('Squad widget unavailable')
+      setStage('idle')
+      return
+    }
+
+    if (!params.publicKey) {
+      toast.error('Squad public key is not configured.')
+      setStage('idle')
+      return
+    }
+
+    setStage('awaiting')
+    widgetOpenedRef.current = false
+
+    const handler = window.squad({
+      key: params.publicKey,
+      email: params.email,
+      amount: Math.round(params.amount * 100),
+      currency_code: 'NGN',
+      transaction_ref: params.reference,
+      customer_name: params.customerName,
+      onLoad: () => {
+        widgetOpenedRef.current = true
+      },
+      onClose: () => {
+        if (stage === 'awaiting') {
+          setStage('idle')
+          toast('Payment cancelled', { icon: 'i' })
+        }
+      },
+      onSuccess: async () => {
+        setStage('verifying')
+        try {
+          const result = await confirm.mutateAsync({ reference: params.reference })
+          await refreshWallet()
+          if (result.status === 'already_completed') {
+            toast.success('Top-up already credited')
+          } else {
+            toast.success(
+              `N${result.amount.toLocaleString('en-NG')} credited (ref ${params.reference.slice(-6)})`,
+            )
+          }
+          onClose()
+        } catch (e) {
+          const message = e instanceof Error ? e.message : 'Could not verify payment'
+          toast.error(message)
+          setStage('idle')
+        }
+      },
+    })
+    handler.setup()
+    handler.open()
   }
 
-  const fee = Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015) : 0
-  const total = Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015) : 0
+  const submitTransfer = () => {
+    if (!Number.isFinite(finalAmount) || finalAmount < 500) {
+      toast.error('Minimum top-up is N500')
+      return
+    }
+    fallbackTopup.mutate({ amount: finalAmount, method: 'transfer' })
+  }
+
+  const handleCardSubmit = () => {
+    if (squadConfig?.squadConfigured) {
+      void launchSquad()
+    } else {
+      // Server side doesn't have Squad keys — use the simulator so the demo
+      // still works locally / without keys.
+      if (!Number.isFinite(finalAmount) || finalAmount < 500) {
+        toast.error('Minimum top-up is N500')
+        return
+      }
+      fallbackTopup.mutate({ amount: finalAmount, method: 'card' })
+    }
+  }
+
+  const cardButtonLoading =
+    initiate.isPending ||
+    confirm.isPending ||
+    stage === 'launching' ||
+    stage === 'awaiting' ||
+    stage === 'verifying' ||
+    fallbackTopup.isPending
+
+  const cardButtonLabel =
+    stage === 'launching'
+      ? 'Loading checkout…'
+      : stage === 'awaiting'
+        ? 'Awaiting payment…'
+        : stage === 'verifying'
+          ? 'Verifying with Squad…'
+          : squadConfig?.squadConfigured
+            ? 'Pay with Squad'
+            : 'Simulate Card Payment'
 
   return (
     <AnimatePresence>
@@ -82,7 +273,11 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                 <h2 id="topup-title" className="font-display text-base font-bold tracking-tight text-ink-primary">
                   Top Up Wallet
                 </h2>
-                <p className="text-[11px] text-ink-muted">Secured by Squad Payments</p>
+                <p className="text-[11px] text-ink-muted">
+                  {squadConfig?.squadConfigured
+                    ? 'Secured by Squad Payments'
+                    : 'Demo mode — Squad keys not configured'}
+                </p>
               </div>
             </div>
             <button
@@ -160,7 +355,6 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                   </div>
                 </div>
 
-                {/* Summary */}
                 <div className="rounded-xl border border-surface-border bg-surface-elevated/60 p-4">
                   <dl className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -182,15 +376,32 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                   </dl>
                 </div>
 
+                {!squadConfig?.squadConfigured && (
+                  <div className="flex items-start gap-2 rounded-xl border border-status-suspicious/25 bg-status-suspicious/8 p-3 text-xs text-ink-primary">
+                    <AlertCircle size={14} className="mt-0.5 shrink-0 text-status-suspicious" />
+                    <span>
+                      Real Squad payments are disabled because the server keys aren't set. This
+                      button will simulate the credit so you can keep demoing the flow.
+                    </span>
+                  </div>
+                )}
+
                 <Button
                   fullWidth
                   size="lg"
-                  onClick={handleSubmit}
-                  loading={topUpMutation.isPending}
+                  onClick={handleCardSubmit}
+                  loading={cardButtonLoading}
                   leftIcon={<Zap size={14} />}
+                  disabled={!user?.email && squadConfig?.squadConfigured}
                 >
-                  Confirm Payment
+                  {cardButtonLabel}
                 </Button>
+
+                {squadConfig?.squadConfigured && !user?.email && (
+                  <p className="text-center text-[11px] text-status-fake">
+                    No email on your account — add one or use the simulated flow.
+                  </p>
+                )}
               </>
             ) : (
               <div className="text-center">
@@ -209,8 +420,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
 
                 <div className="mt-4 rounded-xl border border-surface-border bg-surface-elevated p-3">
                   <p className="text-[11px] text-ink-muted">
-                    Demo transfers credit through the same Squad-backed wallet ledger used by card
-                    payments.
+                    Demo transfers credit through the same wallet ledger used by card payments.
                   </p>
                 </div>
 
@@ -218,8 +428,8 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                   fullWidth
                   size="lg"
                   className="mt-4"
-                  onClick={handleSubmit}
-                  loading={topUpMutation.isPending}
+                  onClick={submitTransfer}
+                  loading={fallbackTopup.isPending}
                   leftIcon={<CheckCircle2 size={14} />}
                 >
                   Credit Demo Transfer
