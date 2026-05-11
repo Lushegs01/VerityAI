@@ -1,129 +1,201 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, CreditCard, Loader2, CheckCircle2 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { useWalletStore } from '@/src/store/walletStore';
-import { cn } from '@/src/lib/utils';
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, CreditCard, Building2, Zap } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { trpc } from '@/providers/trpc'
 
 interface TopUpModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  onClose: () => void
 }
 
-export function TopUpModal({ isOpen, onClose }: TopUpModalProps) {
-  const [amount, setAmount] = useState<string>('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const addFunds = useWalletStore((state) => state.addFunds);
+const amounts = [1000, 2000, 5000, 10000, 20000, 50000]
 
-  const presets = [2000, 5000, 10000];
+export default function TopUpModal({ onClose }: TopUpModalProps) {
+  const [method, setMethod] = useState<'card' | 'transfer'>('card')
+  const [amount, setAmount] = useState(5000)
+  const [customAmount, setCustomAmount] = useState('')
+  const utils = trpc.useUtils()
 
-  const handlePayment = async () => {
-    const numAmount = parseInt(amount);
-    if (!amount || isNaN(numAmount) || numAmount < 500) {
-      toast.error('Minimum top-up amount is ₦500');
-      return;
+  const finalAmount = customAmount.trim() ? Number(customAmount) : amount
+  const topUpMutation = trpc.wallet.topup.useMutation({
+    onSuccess: async (data) => {
+      await Promise.all([
+        utils.wallet.balance.invalidate(),
+        utils.wallet.transactions.invalidate(),
+        utils.auth.me.invalidate(),
+        utils.auth.getExtendedUser.invalidate(),
+      ])
+      toast.success(`N${data.amount.toLocaleString()} added to wallet`)
+      onClose()
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    },
+  })
+
+  const handleSubmit = () => {
+    if (!Number.isFinite(finalAmount) || finalAmount < 500) {
+      toast.error('Minimum top-up is N500')
+      return
     }
 
-    setIsProcessing(true);
-    
-    // Mock payment delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    addFunds(numAmount);
-    setIsProcessing(false);
-    toast.success(`₦${numAmount.toLocaleString()} added to your wallet!`, {
-      icon: <CheckCircle2 className="text-status-verified" />,
-    });
-    onClose();
-    setAmount('');
-  };
+    topUpMutation.mutate({ amount: finalAmount, method })
+  }
 
   return (
     <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-surface-card border border-surface-border rounded-2xl w-full max-w-md overflow-hidden"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-surface-border">
+            <h2 className="font-display text-lg text-ink-primary">Top Up Wallet</h2>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-surface-hover transition-colors"
+            >
+              <X size={18} className="text-ink-muted" />
+            </button>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-surface-card border border-surface-border rounded-3xl p-8 shadow-2xl overflow-hidden"
-          >
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-2xl font-display font-black tracking-tighter uppercase">Top Up Wallet</h2>
-                <p className="text-ink-secondary text-sm font-medium">Add credits to your account instantly.</p>
-              </div>
-              <button onClick={onClose} className="p-2 rounded-full hover:bg-surface-elevated transition-colors">
-                <X className="w-6 h-6 text-ink-muted" />
+          <div className="p-6 space-y-6">
+            {/* Method selector */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setMethod('card')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-medium transition-colors ${
+                  method === 'card'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-surface-border text-ink-secondary hover:bg-surface-hover'
+                }`}
+              >
+                <CreditCard size={16} />
+                Card Payment
+              </button>
+              <button
+                onClick={() => setMethod('transfer')}
+                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-medium transition-colors ${
+                  method === 'transfer'
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-surface-border text-ink-secondary hover:bg-surface-hover'
+                }`}
+              >
+                <Building2 size={16} />
+                Bank Transfer
               </button>
             </div>
 
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <label className="text-[10px] font-mono font-bold text-ink-muted uppercase tracking-[0.2em]">Select Amount</label>
-                <div className="grid grid-cols-3 gap-3">
-                  {presets.map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => setAmount(preset.toString())}
-                      className={cn(
-                        "py-3 rounded-xl border font-mono font-bold transition-all active:scale-95",
-                        amount === preset.toString()
-                          ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
-                          : "bg-surface-elevated border-surface-border text-ink-primary hover:border-primary/50"
-                      )}
-                    >
-                      ₦{preset.toLocaleString()}
-                    </button>
-                  ))}
+            {method === 'card' ? (
+              <>
+                {/* Amount selector */}
+                <div>
+                  <label className="block text-xs text-ink-muted uppercase tracking-wider font-semibold mb-3">
+                    Select Amount
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {amounts.map((a) => (
+                      <button
+                        key={a}
+                        onClick={() => { setAmount(a); setCustomAmount(''); }}
+                        className={`p-3 rounded-xl border text-sm font-medium transition-colors ${
+                          amount === a && !customAmount
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-surface-border text-ink-secondary hover:bg-surface-hover'
+                        }`}
+                      >
+                        N{a.toLocaleString()}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-xs text-ink-muted mb-1.5">Or enter custom amount</label>
+                    <input
+                      type="number"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                      placeholder="Enter amount"
+                      className="w-full bg-surface-elevated border border-surface-border rounded-xl px-4 py-2.5 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-mono font-bold text-ink-muted uppercase tracking-[0.2em]">Custom Amount</label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-bold text-ink-muted">₦</div>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Min. 500"
-                    className="w-full pl-10 pr-4 py-4 rounded-xl bg-surface-elevated border border-surface-border focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-mono font-bold text-lg"
-                  />
+                {/* Summary */}
+                <div className="p-4 rounded-xl bg-surface-elevated border border-surface-border">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-ink-muted">Amount</span>
+                    <span className="text-ink-primary font-medium">
+                      N{Number.isFinite(finalAmount) ? finalAmount.toLocaleString() : '0'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-ink-muted">Fee (1.5%)</span>
+                    <span className="text-ink-primary font-medium">
+                      N{Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015).toLocaleString() : '0'}
+                    </span>
+                  </div>
+                  <div className="border-t border-surface-border pt-2 flex items-center justify-between text-sm">
+                    <span className="text-ink-primary font-semibold">Total</span>
+                    <span className="text-ink-primary font-mono font-bold">
+                      N{Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015).toLocaleString() : '0'}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="pt-4">
-                <button
-                  disabled={isProcessing}
-                  onClick={handlePayment}
-                  className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary-light transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50"
+                {/* Pay button */}
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={handleSubmit}
+                  disabled={topUpMutation.isPending}
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
                 >
-                  {isProcessing ? (
-                    <Loader2 className="w-6 h-6 animate-spin" />
+                  {topUpMutation.isPending ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <>
-                      <CreditCard className="w-5 h-5" />
-                      Pay with Squad
-                    </>
+                    <Zap size={16} />
                   )}
-                </button>
-                <p className="text-center text-[10px] text-ink-muted mt-4 font-medium italic">
-                  Secure processing by Squad Payment Gateway (GTCO)
+                  Pay with Squad
+                </motion.button>
+              </>
+            ) : (
+              /* Bank Transfer */
+              <div className="text-center py-4">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-center">
+                  <Building2 size={28} className="text-primary" />
+                </div>
+                <h3 className="text-sm font-semibold text-ink-primary mb-1">GTBank Virtual Account</h3>
+                <p className="font-mono text-2xl font-bold text-ink-primary mb-1">0012345678</p>
+                <p className="text-sm text-ink-muted mb-4">
+                  Transfer to this account from any Nigerian bank
                 </p>
+                <div className="p-3 rounded-xl bg-surface-elevated border border-surface-border">
+                  <p className="text-xs text-ink-muted">
+                    Demo transfers are credited through the same wallet ledger used by card payments.
+                  </p>
+                </div>
+                <button
+                  onClick={handleSubmit}
+                  disabled={topUpMutation.isPending}
+                  className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                >
+                  Credit Demo Transfer
+                </button>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
     </AnimatePresence>
-  );
+  )
 }

@@ -1,117 +1,152 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  ShieldCheck, 
-  LayoutDashboard, 
-  Search, 
-  Layers, 
-  History, 
-  Wallet, 
-  Settings, 
-  Briefcase,
-  Users,
-  Code,
-  LogOut,
-  ChevronRight
-} from 'lucide-react';
-import { cn } from '@/src/lib/utils';
-import { useWalletStore } from '@/src/store/walletStore';
-import { useAuthStore } from '@/src/store/authStore';
+import { NavLink, useLocation } from 'react-router'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  History,
+  LayoutDashboard,
+  ShieldCheck,
+  Wallet,
+  X,
+} from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 
 const navItems = [
-  { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: Search, label: 'Verify Certificate', path: '/verify' },
-  { icon: Layers, label: 'Bulk Verify', path: '/bulk' },
-  { icon: History, label: 'History', path: '/history' },
-  { icon: ShieldCheck, label: 'Badge', path: '/badge/sample' },
-];
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/verify', icon: ShieldCheck, label: 'Verify' },
+  { to: '/history', icon: History, label: 'History' },
+  { to: '/wallet', icon: Wallet, label: 'Wallet' },
+]
 
-const secondaryItems = [
-  { icon: Settings, label: 'Settings', path: '/settings' },
-];
+interface SidebarProps {
+  mobileOpen: boolean
+  onMobileClose: () => void
+}
 
-export function Sidebar() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const balance = useWalletStore((state) => state.balance);
-  const { user, logout } = useAuthStore();
+function Brand() {
+  return (
+    <NavLink to="/dashboard" className="flex items-center gap-3">
+      <div className="flex size-10 items-center justify-center rounded-lg bg-primary">
+        <ShieldCheck className="text-white" size={21} />
+      </div>
+      <div className="min-w-0">
+        <h1 className="font-display text-lg font-bold leading-tight text-ink-primary">
+          Verity
+        </h1>
+        <p className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">
+          Trust, Verified.
+        </p>
+      </div>
+    </NavLink>
+  )
+}
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
+function NavItems({ onSelect }: { onSelect?: () => void }) {
+  const location = useLocation()
+
+  const isActivePath = (path: string) => {
+    if (path === '/dashboard') return location.pathname === '/dashboard'
+    return location.pathname.startsWith(path)
+  }
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 border-r border-surface-border bg-surface-card h-screen sticky top-0">
-      <div className="p-6 flex items-center gap-2">
-        <ShieldCheck className="w-8 h-8 text-primary shadow-[0_0_15px_rgba(5,150,105,0.15)]" />
-        <span className="text-xl font-display font-black tracking-tighter uppercase">Verity</span>
-      </div>
-
-      <nav className="flex-1 px-4 py-4 space-y-8 overflow-y-auto">
-        <div className="space-y-1">
-          <div className="px-3 mb-2 text-[10px] font-mono font-bold text-ink-muted uppercase tracking-[0.2em]">Navigation</div>
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative",
-                location.pathname === item.path 
-                  ? "bg-primary/10 text-primary border-l-4 border-l-primary" 
-                  : "text-ink-secondary hover:text-ink-primary hover:bg-surface-elevated border-l-4 border-l-transparent"
-              )}
-            >
-              <item.icon className={cn(
-                "w-5 h-5 transition-colors",
-                location.pathname === item.path ? "text-primary" : "text-ink-muted group-hover:text-ink-primary"
-              )} />
-              <span className="text-sm font-bold">{item.label}</span>
-              {location.pathname === item.path && (
-                <ChevronRight className="w-4 h-4 ml-auto opacity-50" />
-              )}
-            </Link>
-          ))}
-        </div>
-
-        <div className="space-y-1">
-          <div className="px-3 mb-2 text-[10px] font-mono font-bold text-ink-muted uppercase tracking-[0.2em]">Preferences</div>
-          {secondaryItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group border-l-4 border-l-transparent",
-                location.pathname === item.path 
-                  ? "bg-primary/10 text-primary border-l-primary" 
-                  : "text-ink-secondary hover:text-ink-primary hover:bg-surface-elevated"
-              )}
-            >
-              <item.icon className="w-5 h-5 text-ink-muted group-hover:text-ink-primary transition-colors" />
-              <span className="text-sm font-bold">{item.label}</span>
-            </Link>
-          ))}
-        </div>
-      </nav>
-
-      <div className="p-4 space-y-4 border-t border-surface-border">
-        <div className="p-4 rounded-2xl bg-surface-base border border-surface-border">
-          <div className="text-[10px] font-mono text-ink-muted uppercase tracking-wider mb-1">Wallet Balance</div>
-          <div className="text-lg font-mono font-black text-ink-primary">
-            ₦{(balance / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </div>
-          <Link to="/wallet" className="mt-2 block text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">
-            Top Up Account
-          </Link>
-        </div>
-
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-ink-secondary hover:text-status-fake hover:bg-status-fake-bg/10 transition-all group"
+    <nav className="space-y-1.5 px-3 py-4">
+      {navItems.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          onClick={onSelect}
+          className={({ isActive }) =>
+            `flex min-h-11 items-center gap-3 rounded-lg border px-3 text-sm font-medium transition-colors ${
+              isActive || isActivePath(item.to)
+                ? 'border-primary/25 bg-primary/10 text-primary'
+                : 'border-transparent text-ink-secondary hover:border-surface-border hover:bg-surface-hover hover:text-ink-primary'
+            }`
+          }
         >
-          <LogOut className="w-5 h-5 text-ink-muted group-hover:text-status-fake transition-colors" />
-          <span className="text-sm font-bold">Logout Session</span>
-        </button>
+          <item.icon size={18} />
+          <span>{item.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  )
+}
+
+function UserProfile() {
+  const { user } = useAuth()
+  const initial = (user?.name || user?.fullName || 'U').charAt(0).toUpperCase()
+
+  return (
+    <div className="border-t border-surface-border p-4">
+      <div className="flex min-w-0 items-center gap-3 rounded-lg border border-surface-border bg-surface-elevated px-3 py-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
+          <span className="text-xs font-semibold text-primary">{initial}</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-ink-primary">
+            {user?.fullName || user?.name || 'User'}
+          </p>
+          <p className="truncate text-[11px] text-ink-muted">
+            {user?.email || 'Signed in'}
+          </p>
+        </div>
       </div>
-    </aside>
-  );
+    </div>
+  )
+}
+
+export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
+  return (
+    <>
+      <aside className="hidden w-64 shrink-0 border-r border-surface-border bg-surface-card lg:flex lg:flex-col">
+        <div className="border-b border-surface-border p-6">
+          <Brand />
+        </div>
+        <div className="flex-1">
+          <NavItems />
+        </div>
+        <UserProfile />
+      </aside>
+
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close navigation"
+              className="fixed inset-0 z-40 bg-black/65 lg:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onMobileClose}
+            />
+            <motion.aside
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation menu"
+              className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-surface-border bg-surface-card lg:hidden"
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 260 }}
+            >
+              <div className="flex items-center justify-between border-b border-surface-border p-5">
+                <Brand />
+                <button
+                  type="button"
+                  aria-label="Close navigation"
+                  onClick={onMobileClose}
+                  className="flex size-10 items-center justify-center rounded-lg border border-surface-border bg-surface-elevated text-ink-secondary transition-colors hover:text-ink-primary"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto py-2">
+                <NavItems onSelect={onMobileClose} />
+              </div>
+              <UserProfile />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  )
 }

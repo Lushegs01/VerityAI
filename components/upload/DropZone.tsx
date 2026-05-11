@@ -1,103 +1,95 @@
-import React, { useCallback, useState } from 'react';
-import { useDropzone, Accept } from 'react-dropzone';
-import { Upload, FileText, X, CheckCircle2, AlertCircle } from 'lucide-react';
-import { cn } from '@/src/lib/utils';
+import { useCallback } from 'react'
+import { useDropzone } from 'react-dropzone'
+import { motion } from 'framer-motion'
+import { Upload, FileImage, FileText } from 'lucide-react'
 
 interface DropZoneProps {
-  onFileSelect: (file: File | null) => void;
-  accept?: Accept;
-  maxSize?: number;
+  onFileSelect: (file: File) => void
+  accept?: Record<string, string[]>
+  maxSize?: number
+  label?: string
+  sublabel?: string
 }
 
-export function DropZone({ onFileSelect, accept = { 'image/*': ['.jpeg', '.jpg', '.png'], 'application/pdf': ['.pdf'] }, maxSize = 10 * 1024 * 1024 }: DropZoneProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
-    if (fileRejections.length > 0) {
-      const rej = fileRejections[0];
-      if (rej.errors[0].code === 'file-too-large') {
-        setError('File is too large (max 10MB)');
-      } else {
-        setError('Invalid file type. Please upload an image or PDF.');
+export default function DropZone({
+  onFileSelect,
+  accept = {
+    'image/*': ['.jpg', '.jpeg', '.png', '.webp'],
+    'application/pdf': ['.pdf'],
+  },
+  maxSize = 10 * 1024 * 1024,
+  label = 'Upload a certificate',
+  sublabel = 'Drag and drop or click to browse',
+}: DropZoneProps) {
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      if (acceptedFiles.length > 0) {
+        onFileSelect(acceptedFiles[0])
       }
-      return;
-    }
+    },
+    [onFileSelect]
+  )
 
-    if (acceptedFiles.length > 0) {
-      const selectedFile = acceptedFiles[0];
-      setFile(selectedFile);
-      setError(null);
-      onFileSelect(selectedFile);
-    }
-  }, [onFileSelect]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept,
-    maxSize,
-    multiple: false
-  } as any);
-
-  const removeFile = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setFile(null);
-    onFileSelect(null);
-  };
+  const { getRootProps, getInputProps, isDragActive, isDragReject } =
+    useDropzone({
+      onDrop,
+      accept,
+      maxSize,
+      multiple: false,
+    })
 
   return (
-    <div className="space-y-4">
-      <div 
-        {...getRootProps()} 
-        className={cn(
-          "relative border-2 border-dashed rounded-3xl p-10 transition-all cursor-pointer group flex flex-col items-center justify-center text-center",
-          isDragActive ? "border-primary bg-primary/5 scale-[1.01]" : "border-surface-border bg-surface-base hover:border-ink-muted/50 hover:bg-surface-card",
-          file ? "border-status-verified/50 bg-status-verified-bg/20" : ""
-        )}
+    <motion.div
+      whileHover={{ scale: 1.005 }}
+      whileTap={{ scale: 0.995 }}
+    >
+      <div
+        {...getRootProps()}
+        className={`
+          relative cursor-pointer rounded-lg border border-dashed p-8 text-center
+          transition-all duration-200 overflow-hidden
+          ${isDragActive && !isDragReject
+            ? 'border-primary bg-primary/5'
+            : isDragReject
+              ? 'border-status-fake bg-status-fake-bg'
+              : 'border-surface-border bg-surface-card hover:border-primary/40 hover:bg-surface-hover'
+          }
+        `}
       >
         <input {...getInputProps()} />
-        
-        {file ? (
-          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-300">
-            <div className="w-16 h-16 rounded-2xl bg-status-verified/10 flex items-center justify-center mb-4 border border-status-verified/20">
-              <FileText className="w-8 h-8 text-status-verified" />
-            </div>
-            <p className="text-sm font-bold text-ink-primary mb-1">{file.name}</p>
-            <p className="text-[10px] font-mono text-ink-muted uppercase">{(file.size / 1024 / 1024).toFixed(2)} MB • READY FOR ANALYSIS</p>
-            
-            <button 
-              onClick={removeFile}
-              className="mt-6 flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-elevated border border-surface-border text-[10px] font-mono font-bold text-ink-muted hover:text-status-fake hover:border-status-fake transition-all uppercase tracking-widest"
-            >
-              <X className="w-3 h-3" /> Remove File
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="w-16 h-16 rounded-2xl bg-surface-elevated border border-surface-border flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-primary/10 group-hover:border-primary/30 transition-all">
-              <Upload className="w-8 h-8 text-ink-muted group-hover:text-primary transition-colors" />
-            </div>
-            <h3 className="text-xl font-display font-bold mb-2 uppercase tracking-tight">Drop Certificate Here</h3>
-            <p className="text-sm text-ink-secondary max-w-xs font-medium leading-relaxed">
-              Drag and drop your document (PDF, PNG, JPG) or click to browse. Max size 10MB.
-            </p>
-          </>
-        )}
 
-        {error && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 text-[10px] font-mono font-black text-status-fake uppercase tracking-widest bg-status-fake-bg px-3 py-1 rounded-full border border-status-fake/20 animate-bounce">
-            <AlertCircle className="w-3 h-3" /> {error}
+        <motion.div
+          animate={isDragActive ? { y: [0, -5, 0] } : {}}
+          transition={{ repeat: Infinity, duration: 1 }}
+          className="relative z-10"
+        >
+          <div className={`
+            mx-auto mb-4 flex size-14 items-center justify-center rounded-lg border
+            ${isDragActive
+              ? 'border-primary/20 bg-primary/10 text-primary'
+              : 'border-surface-border bg-surface-elevated text-ink-muted'
+            }
+          `}>
+            <Upload size={24} />
           </div>
-        )}
-      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 px-2">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-mono font-bold text-ink-muted uppercase tracking-widest">
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-status-verified" /> AES-256</span>
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-status-verified" /> PII Purge</span>
-          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-status-verified" /> ISO/IEC 27001</span>
-        </div>
+          <p className="text-sm font-medium text-ink-primary mb-1">{label}</p>
+          <p className="text-xs text-ink-muted">{sublabel}</p>
+
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <div className="flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-elevated px-2 py-1">
+              <FileImage size={12} className="text-ink-muted" />
+              <span className="text-[10px] text-ink-muted">JPG, PNG, WEBP</span>
+            </div>
+            <div className="flex items-center gap-1.5 rounded-md border border-surface-border bg-surface-elevated px-2 py-1">
+              <FileText size={12} className="text-ink-muted" />
+              <span className="text-[10px] text-ink-muted">PDF</span>
+            </div>
+          </div>
+
+          <p className="text-[10px] text-ink-muted mt-2">Max file size: {(maxSize / 1024 / 1024).toFixed(0)}MB</p>
+        </motion.div>
       </div>
-    </div>
-  );
+    </motion.div>
+  )
 }

@@ -1,64 +1,71 @@
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import { mockChartData } from '@/src/mock/dashboardData';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts'
 
-export function ActivityChart() {
+interface ActivityData {
+  date: string
+  count: number
+}
+
+export default function ActivityChart({ data }: { data: ActivityData[] }) {
+  const gridColor = 'hsl(var(--surface-border))'
+  const mutedText = 'hsl(var(--ink-muted))'
+  const tooltipBackground = 'hsl(var(--surface-elevated))'
+  const tooltipText = 'hsl(var(--ink-primary))'
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center text-sm text-ink-muted">
+        No data available
+      </div>
+    )
+  }
+
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={mockChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="colorVerified" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#00D4FF" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#00D4FF" stopOpacity={0}/>
-            </linearGradient>
-            <linearGradient id="colorFlagged" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#00FF85" stopOpacity={0.3}/>
-              <stop offset="95%" stopColor="#00FF85" stopOpacity={0}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1E2535" vertical={false} />
-          <XAxis 
-            dataKey="date" 
-            stroke="#4B5568" 
-            fontSize={10} 
-            tickLine={false} 
-            axisLine={false} 
-            dy={10}
-          />
-          <YAxis 
-            stroke="#4B5568" 
-            fontSize={10} 
-            tickLine={false} 
-            axisLine={false}
-            tickFormatter={(value) => `${value}`}
-          />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: '#0E1117', 
-              borderColor: '#1E2535', 
-              borderRadius: '12px',
-              fontSize: '12px',
-              color: '#F0F4FF'
-            }}
-          />
-          <Area 
-            type="monotone" 
-            dataKey="verified" 
-            stroke="#00D4FF" 
-            strokeWidth={3}
-            fillOpacity={1} 
-            fill="url(#colorVerified)" 
-          />
-          <Area 
-            type="monotone" 
-            dataKey="flagged" 
-            stroke="#00FF85" 
-            strokeWidth={3}
-            fillOpacity={1} 
-            fill="url(#colorFlagged)" 
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
+    <ResponsiveContainer width="100%" height={260}>
+      <AreaChart data={data}>
+        <defs>
+          <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#E51E56" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#E51E56" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+        <XAxis
+          dataKey="date"
+          tick={{ fill: mutedText, fontSize: 12 }}
+          axisLine={{ stroke: gridColor }}
+          tickLine={false}
+        />
+        <YAxis
+          tick={{ fill: mutedText, fontSize: 12 }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: tooltipBackground,
+            border: `1px solid ${gridColor}`,
+            borderRadius: '8px',
+            fontSize: '12px',
+            color: tooltipText,
+          }}
+          formatter={(value: number) => [`${value} verifications`, 'Count']}
+        />
+        <Area
+          type="monotone"
+          dataKey="count"
+          stroke="#E51E56"
+          strokeWidth={2}
+          fill="url(#activityGradient)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
 }
