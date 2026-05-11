@@ -17,9 +17,9 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.95.1",
     "@aws-sdk/client-s3": "^3.965.0",
     "@aws-sdk/s3-request-presigner": "^3.965.0",
+    "@google/genai": "^2.0.1",
     "@hono/node-server": "^1.14.3",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",

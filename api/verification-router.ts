@@ -4,7 +4,7 @@ import { createRouter, authedQuery } from './middleware'
 import { getDb } from './queries/connection'
 import { certificates, users, walletTransactions, type InsertCertificate } from '../db/schema'
 import { desc, eq, like, and, or, sql } from 'drizzle-orm'
-import { analyzeWithClaude, isAiConfigured, type ClaudeAnalysis } from './lib/ai-verifier'
+import { analyzeDocument, isAiConfigured, type AnalysisOutput } from './lib/ai-verifier'
 
 const certificateTypes = [
   'WAEC', 'NECO', 'NABTEB', 'HND', 'BSc', 'BA', 'BEng',
@@ -46,13 +46,13 @@ const certificateTypeSchema = z.enum(certificateTypes)
 const verdictSchema = z.enum(verdicts)
 const VERIFICATION_COST = 500
 
-function verdictFromAi(ai: ClaudeAnalysis['aiVerdict']): Verdict {
+function verdictFromAi(ai: AnalysisOutput['aiVerdict']): Verdict {
   if (ai === 'AUTHENTIC') return 'VERIFIED'
   if (ai === 'LIKELY_FAKE') return 'LIKELY_FAKE'
   return 'SUSPICIOUS'
 }
 
-function ruleFlagsFromAi(flags: ClaudeAnalysis['aiFlags']): RuleFlag[] {
+function ruleFlagsFromAi(flags: AnalysisOutput['aiFlags']): RuleFlag[] {
   // Promote HIGH/CRITICAL AI flags into the rule layer so the dashboard's
   // dual-engine view (AI + Rule) reflects the same high-severity findings.
   return flags
@@ -64,7 +64,7 @@ function ruleFlagsFromAi(flags: ClaudeAnalysis['aiFlags']): RuleFlag[] {
     }))
 }
 
-function toAnalysisResult(ai: ClaudeAnalysis): AnalysisResult {
+function toAnalysisResult(ai: AnalysisOutput): AnalysisResult {
   const ruleFlags = ruleFlagsFromAi(ai.aiFlags)
   const totalPenalty = ruleFlags.reduce((sum, r) => sum + r.penalty, 0)
   const ruleScore = Math.max(0, Math.min(100, 100 - totalPenalty))
@@ -193,26 +193,26 @@ export const verificationRouter = createRouter({
       let inferredImageQuality: 'GOOD' | 'ACCEPTABLE' | 'POOR' | null = null
 
       if (isAiConfigured()) {
-        const claudeOutput = await analyzeWithClaude({
+        const aiOutput = await analyzeDocument({
           fileName: input.fileName,
           fileType: input.fileType,
           fileDataBase64: input.fileData,
           certificateType: input.certificateType,
           applicantName: input.applicantName,
         })
-        aiResult = toAnalysisResult(claudeOutput)
+        aiResult = toAnalysisResult(aiOutput)
         inferredApplicantName =
-          inferredApplicantName || claudeOutput.applicantName || null
-        inferredInstitutionName = claudeOutput.institutionName || null
-        inferredGraduationYear = claudeOutput.graduationYear || null
-        inferredRegNumber = claudeOutput.regNumber || null
-        inferredImageQuality = claudeOutput.imageQuality
+          inferredApplicantName || aiOutput.applicantName || null
+        inferredInstitutionName = aiOutput.institutionName || null
+        inferredGraduationYear = aiOutput.graduationYear || null
+        inferredRegNumber = aiOutput.regNumber || null
+        inferredImageQuality = aiOutput.imageQuality
       } else {
         // Fallback for environments without ANTHROPIC_API_KEY (CI, local dev,
         // first-time setup). Keeps the flow demoable but clearly identifies
         // the source in the reasoning string.
         aiResult = simulateAIAnalysis(input.fileName, input.certificateType)
-        aiResult.aiReasoning = `[simulated — set ANTHROPIC_API_KEY for real AI verification] ${aiResult.aiReasoning}`
+        aiResult.aiReasoning = `[simulated — set GEMINI_API_KEY for real AI verification] ${aiResult.aiReasoning}`
       }
 
       const processingTimeMs = Date.now() - aiStart
