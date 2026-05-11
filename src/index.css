@@ -4,6 +4,14 @@
 
 @layer base {
   :root {
+    --surface-base: 220 30% 4%;
+    --surface-card: 220 24% 7%;
+    --surface-elevated: 222 26% 12%;
+    --surface-border: 220 20% 15%;
+    --surface-hover: 222 35% 16%;
+    --ink-primary: 230 60% 97%;
+    --ink-secondary: 224 18% 61%;
+    --ink-muted: 224 16% 35%;
     --background: 220 30% 4%;
     --foreground: 230 60% 97%;
     --card: 220 24% 7%;
@@ -34,12 +42,48 @@
     --sidebar-ring: 345 80% 51%;
   }
 
+  [data-theme='light'] {
+    --surface-base: 225 33% 98%;
+    --surface-card: 0 0% 100%;
+    --surface-elevated: 228 31% 95%;
+    --surface-border: 224 24% 86%;
+    --surface-hover: 227 30% 93%;
+    --ink-primary: 226 38% 13%;
+    --ink-secondary: 224 16% 37%;
+    --ink-muted: 224 12% 51%;
+    --background: 225 33% 98%;
+    --foreground: 226 38% 13%;
+    --card: 0 0% 100%;
+    --card-foreground: 226 38% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 226 38% 13%;
+    --secondary: 228 31% 95%;
+    --secondary-foreground: 226 38% 13%;
+    --muted: 228 31% 95%;
+    --muted-foreground: 224 12% 51%;
+    --accent: 192 100% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 355 80% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 224 24% 86%;
+    --input: 224 24% 86%;
+    --ring: 345 80% 51%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 226 38% 13%;
+    --sidebar-primary: 345 80% 51%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 31% 95%;
+    --sidebar-accent-foreground: 226 38% 13%;
+    --sidebar-border: 224 24% 86%;
+    --sidebar-ring: 345 80% 51%;
+  }
+
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-surface-base text-ink-primary font-body antialiased;
+    @apply bg-surface-base text-ink-primary font-body antialiased transition-colors;
     font-family: 'DM Sans', sans-serif;
   }
 
@@ -78,16 +122,8 @@
     background-clip: text;
   }
 
-  .glow-primary {
-    box-shadow: 0 0 40px rgba(229, 30, 86, 0.15);
-  }
-
-  .glow-cyan {
-    box-shadow: 0 0 40px rgba(0, 212, 255, 0.12);
-  }
-
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #1E2535 #07090F;
+    scrollbar-color: hsl(var(--surface-border)) hsl(var(--surface-base));
   }
 }

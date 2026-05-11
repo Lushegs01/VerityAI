@@ -14,6 +14,11 @@ interface ActivityData {
 }
 
 export default function ActivityChart({ data }: { data: ActivityData[] }) {
+  const gridColor = 'hsl(var(--surface-border))'
+  const mutedText = 'hsl(var(--ink-muted))'
+  const tooltipBackground = 'hsl(var(--surface-elevated))'
+  const tooltipText = 'hsl(var(--ink-primary))'
+
   if (!data || data.length === 0) {
     return (
       <div className="h-64 flex items-center justify-center text-sm text-ink-muted">
@@ -31,25 +36,25 @@ export default function ActivityChart({ data }: { data: ActivityData[] }) {
             <stop offset="100%" stopColor="#E51E56" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1E2535" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
         <XAxis
           dataKey="date"
-          tick={{ fill: '#4B5568', fontSize: 12 }}
-          axisLine={{ stroke: '#1E2535' }}
+          tick={{ fill: mutedText, fontSize: 12 }}
+          axisLine={{ stroke: gridColor }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: '#4B5568', fontSize: 12 }}
+          tick={{ fill: mutedText, fontSize: 12 }}
           axisLine={false}
           tickLine={false}
         />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#161B27',
-            border: '1px solid #1E2535',
-            borderRadius: '12px',
+            backgroundColor: tooltipBackground,
+            border: `1px solid ${gridColor}`,
+            borderRadius: '8px',
             fontSize: '12px',
-            color: '#F0F4FF',
+            color: tooltipText,
           }}
           formatter={(value: number) => [`${value} verifications`, 'Count']}
         />

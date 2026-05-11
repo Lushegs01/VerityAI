@@ -33,13 +33,6 @@ export default function TrustScoreRing({
 
   const offset = circumference - (visibleScore / 100) * circumference
 
-  // Glow color
-  const getGlowColor = () => {
-    if (score >= 85) return 'rgba(0, 200, 150, 0.15)'
-    if (score >= 50) return 'rgba(245, 158, 11, 0.12)'
-    return 'rgba(229, 30, 86, 0.15)'
-  }
-
   // Verdict label
   const getVerdictLabel = () => {
     if (verdict === 'VERIFIED') return 'VERIFIED'
@@ -74,26 +67,8 @@ export default function TrustScoreRing({
         style={{
           width: size,
           height: size,
-          filter: `drop-shadow(0 0 20px ${getGlowColor()})`,
         }}
       >
-        {/* Background pulse ring */}
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: `radial-gradient(circle, ${getGlowColor()} 0%, transparent 70%)`,
-          }}
-          animate={{
-            scale: [1, 1.08, 1],
-            opacity: [0.5, 0.8, 0.5],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-
         {/* SVG Ring */}
         <svg
           width={size}
@@ -113,7 +88,7 @@ export default function TrustScoreRing({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#1E2535"
+            stroke="hsl(var(--surface-border))"
             strokeWidth={strokeWidth}
           />
 

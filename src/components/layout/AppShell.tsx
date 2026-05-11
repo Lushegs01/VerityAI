@@ -7,7 +7,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
 
   return (
-    <div className="noise-overlay flex min-h-screen overflow-x-hidden bg-surface-base">
+    <div className="flex min-h-screen overflow-x-hidden bg-surface-base">
       <Sidebar
         mobileOpen={mobileNavOpen}
         onMobileClose={() => setMobileNavOpen(false)}
@@ -18,7 +18,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="w-full flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8"
+          className="mx-auto w-full max-w-7xl flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8"
         >
           {children}
         </motion.main>

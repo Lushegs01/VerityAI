@@ -24,7 +24,7 @@ interface SidebarProps {
 function Brand() {
   return (
     <NavLink to="/dashboard" className="flex items-center gap-3">
-      <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-glow">
+      <div className="flex size-10 items-center justify-center rounded-lg bg-primary">
         <ShieldCheck className="text-white" size={21} />
       </div>
       <div className="min-w-0">
@@ -48,17 +48,17 @@ function NavItems({ onSelect }: { onSelect?: () => void }) {
   }
 
   return (
-    <nav className="space-y-1 px-3 py-4">
+    <nav className="space-y-1.5 px-3 py-4">
       {navItems.map((item) => (
         <NavLink
           key={item.to}
           to={item.to}
           onClick={onSelect}
           className={({ isActive }) =>
-            `flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors ${
+            `flex min-h-11 items-center gap-3 rounded-lg border px-3 text-sm font-medium transition-colors ${
               isActive || isActivePath(item.to)
-                ? 'bg-primary/10 text-primary ring-1 ring-primary/15'
-                : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary'
+                ? 'border-primary/25 bg-primary/10 text-primary'
+                : 'border-transparent text-ink-secondary hover:border-surface-border hover:bg-surface-hover hover:text-ink-primary'
             }`
           }
         >
@@ -76,7 +76,7 @@ function UserProfile() {
 
   return (
     <div className="border-t border-surface-border p-4">
-      <div className="flex min-w-0 items-center gap-3 rounded-xl bg-surface-elevated px-3 py-3">
+      <div className="flex min-w-0 items-center gap-3 rounded-lg border border-surface-border bg-surface-elevated px-3 py-3">
         <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
           <span className="text-xs font-semibold text-primary">{initial}</span>
         </div>
@@ -112,7 +112,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             <motion.button
               type="button"
               aria-label="Close navigation"
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-40 bg-black/65 lg:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -122,7 +122,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
-              className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-surface-border bg-surface-card shadow-2xl lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-surface-border bg-surface-card lg:hidden"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -134,7 +134,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   type="button"
                   aria-label="Close navigation"
                   onClick={onMobileClose}
-                  className="flex size-10 items-center justify-center rounded-xl border border-surface-border bg-surface-elevated text-ink-secondary transition-colors hover:text-ink-primary"
+                  className="flex size-10 items-center justify-center rounded-lg border border-surface-border bg-surface-elevated text-ink-secondary transition-colors hover:text-ink-primary"
                 >
                   <X size={18} />
                 </button>
