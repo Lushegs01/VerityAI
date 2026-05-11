@@ -106,9 +106,9 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
           <Menu size={20} />
         </button>
         <Link to="/dashboard" className="flex items-center gap-2">
-          <BrandMark size={22} />
-          <span className="font-display text-base font-black uppercase tracking-tighter text-primary">
-            VerityAI
+          <BrandMark size={26} />
+          <span className="font-display text-base font-black lowercase tracking-tighter text-ink-primary">
+            verity
           </span>
         </Link>
         <Link

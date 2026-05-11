@@ -3,13 +3,24 @@ import { trpc } from '@/providers/trpc'
 import { useAuthStore } from '@/store/authStore'
 
 export function useAuth() {
-  const { user, setAuth, setUser, logout: clearAuth, isLoading, setLoading } = useAuthStore()
+  const {
+    user,
+    setAuth,
+    setUser,
+    logout: clearAuth,
+    isLoading,
+    setLoading,
+    isDemo,
+  } = useAuthStore()
   const utils = trpc.useUtils()
 
-  const sessionQuery = trpc.auth.me.useQuery(
-    undefined,
-    { retry: false, staleTime: 5 * 60 * 1000 }
-  )
+  // Skip the live session check entirely in demo mode so the locally
+  // persisted user isn't clobbered by a 401 from /api/trpc/auth.me.
+  const sessionQuery = trpc.auth.me.useQuery(undefined, {
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    enabled: !isDemo,
+  })
 
   const logoutMutation = trpc.auth.logout.useMutation({
     onSettled: async () => {
@@ -19,24 +30,32 @@ export function useAuth() {
   })
 
   useEffect(() => {
+    if (isDemo) {
+      setLoading(false)
+      return
+    }
     if (sessionQuery.isLoading) {
       setLoading(true)
       return
     }
-
     if (sessionQuery.data) {
       setAuth(sessionQuery.data)
       return
     }
-
     setUser(null)
     setLoading(false)
-  }, [sessionQuery.data, sessionQuery.isLoading, setAuth, setLoading, setUser])
+  }, [isDemo, sessionQuery.data, sessionQuery.isLoading, setAuth, setLoading, setUser])
 
   return {
     user,
     isAuthenticated: !!user,
-    isLoading: isLoading || sessionQuery.isLoading,
-    logout: () => logoutMutation.mutate(),
+    isLoading: isDemo ? false : isLoading || sessionQuery.isLoading,
+    logout: () => {
+      if (isDemo) {
+        clearAuth()
+        return
+      }
+      logoutMutation.mutate()
+    },
   }
 }

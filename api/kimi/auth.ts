@@ -193,8 +193,13 @@ export function createOAuthCallbackHandler() {
 
       return c.redirect("/dashboard", 302);
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown OAuth failure";
       console.error("[OAuth] Callback failed", error);
-      return c.json({ error: "OAuth callback failed" }, 500);
+      // Redirect to the login page with the failure reason so users see
+      // a helpful inline message instead of a raw JSON error blob.
+      const params = new URLSearchParams({ oauth_error: message });
+      return c.redirect(`/login?${params.toString()}`, 302);
     }
   };
 }

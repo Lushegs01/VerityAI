@@ -15,7 +15,9 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/store/authStore'
 import { trpc } from '@/providers/trpc'
+import { demoTransactions } from '@/lib/demoData'
 import TopUpModal from '@/components/wallet/TopUpModal'
 import {
   Button,
@@ -33,10 +35,30 @@ export default function Wallet() {
   const [showTopUp, setShowTopUp] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const { data: transactions, isLoading } = trpc.wallet.transactions.useQuery({ limit: 20 })
-  const { data: balanceData } = trpc.wallet.balance.useQuery()
+  const isDemo = useAuthStore((s) => s.isDemo)
+  const liveTransactions = trpc.wallet.transactions.useQuery(
+    { limit: 20 },
+    { enabled: !isDemo },
+  )
+  const liveBalance = trpc.wallet.balance.useQuery(undefined, { enabled: !isDemo })
 
-  const balance = balanceData?.balance ?? parseFloat(user?.walletBalance || '0')
+  // Map demo transactions into the wallet-transaction shape used by the page.
+  const demoMappedTx = demoTransactions.map((t) => ({
+    id: t.id,
+    type: t.type === 'credit' ? ('topup' as const) : ('deduction' as const),
+    amount: t.amount.toString(),
+    status: 'success' as const,
+    description: t.description,
+    reference: `REF-${t.id.toString().padStart(6, '0')}`,
+    createdAt: t.createdAt,
+  }))
+
+  const transactions = isDemo ? demoMappedTx : liveTransactions.data
+  const isLoading = !isDemo && liveTransactions.isLoading
+
+  const balance = isDemo
+    ? parseFloat(user?.walletBalance || '12500')
+    : liveBalance.data?.balance ?? parseFloat(user?.walletBalance || '0')
 
   const totalTopUps =
     transactions?.filter((t) => t.type === 'topup').reduce((s, t) => s + Number(t.amount), 0) || 0

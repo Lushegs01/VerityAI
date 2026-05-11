@@ -18,6 +18,7 @@ import toast from 'react-hot-toast'
 import DropZone from '@/components/upload/DropZone'
 import VerdictCard from '@/components/trust/VerdictCard'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/store/authStore'
 import { trpc } from '@/providers/trpc'
 import type { inferRouterOutputs } from '@trpc/server'
 import type { AppRouter } from '../../api/router'
@@ -195,6 +196,7 @@ function ProcessingModal({
 
 export default function Verify() {
   const { user } = useAuth()
+  const isDemo = useAuthStore((s) => s.isDemo)
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [certificateType, setCertificateType] = useState<CertificateType | ''>('')
@@ -205,6 +207,39 @@ export default function Verify() {
   const [processingStageIdx, setProcessingStageIdx] = useState(0)
   const [result, setResult] = useState<VerificationResult | null>(null)
   const utils = trpc.useUtils()
+
+  /** Build a deterministic demo verification result so the demo flow shows
+   *  a complete VerdictCard without needing the AI engine or wallet. */
+  const buildDemoResult = (fileName: string): VerificationResult => {
+    const hash = Array.from(fileName).reduce((a, c) => a + c.charCodeAt(0), 0)
+    const trust = 55 + (hash % 45)
+    const verdict =
+      trust >= 70 ? 'VERIFIED' : trust >= 40 ? 'SUSPICIOUS' : 'LIKELY_FAKE'
+    return {
+      publicId: `VRT-${(hash * 7).toString(36).slice(-6).toUpperCase()}`,
+      trustScore: trust,
+      verdict,
+      applicantName: applicantName || 'Applicant',
+      institutionName: 'University of Lagos',
+      certificateType: certificateType || 'BSc',
+      graduationYear: 2021,
+      regNumber: `REG-${hash}-2021`,
+      aiVisualIntegrity: Math.min(99, trust + 5),
+      aiDataPlausibility: Math.min(99, trust + 2),
+      aiAnomaly: Math.max(5, 100 - trust),
+      aiInstitution: Math.min(99, trust + 3),
+      aiSecurityFeatures: Math.min(99, trust - 4),
+      aiConfidence: Math.min(99, trust + 1),
+      aiVerdict: verdict,
+      aiReasoning:
+        'Document fonts, seal, and registrar signature align with known reference samples. Metadata is internally consistent and the institution matches a verified registry entry.',
+      aiFlags: [],
+      ruleScore: trust,
+      imageQuality: 'high',
+      processingTimeMs: 12_400,
+      createdAt: new Date(),
+    } as unknown as VerificationResult
+  }
 
   const balance = parseFloat(user?.walletBalance || '0')
   const canVerify = balance >= VERIFICATION_COST
@@ -264,6 +299,18 @@ export default function Verify() {
       setProcessingStageIdx(idx)
     }, 1700)
 
+    if (isDemo) {
+      // Simulate the engine: walk through all stages, then resolve with a
+      // deterministic demo verdict.
+      window.setTimeout(() => {
+        clearInterval(stageInterval)
+        setProcessingStageIdx(aiStages.length - 1)
+        setResult(buildDemoResult(file.name))
+        setStage('result')
+      }, aiStages.length * 1700)
+      return
+    }
+
     const reader = new FileReader()
     reader.onloadend = () => {
       const base64 = (reader.result as string).split(',')[1]
@@ -283,7 +330,16 @@ export default function Verify() {
     reader.readAsDataURL(file)
 
     setTimeout(() => clearInterval(stageInterval), 12000)
-  }, [file, canVerify, applicantEmail, certificateType, applicantName, processMutation])
+  }, [
+    file,
+    canVerify,
+    applicantEmail,
+    certificateType,
+    applicantName,
+    processMutation,
+    isDemo,
+    buildDemoResult,
+  ])
 
   const reset = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl)

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { Counter } from '@/components/ui-system/Counter'
 import TrustScoreRing from '@/components/trust/TrustScoreRing'
+import { BrandMark } from '@/components/brand/Logo'
 import { cn } from '@/lib/utils'
 
 /* ---------- Navbar ---------- */
@@ -54,12 +55,9 @@ function Navbar() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
           <Link to="/" className="flex items-center gap-3">
-            <span className="relative inline-flex size-9 items-center justify-center text-primary">
-              <ShieldCheck size={28} strokeWidth={2.25} />
-              <span className="absolute inset-[-30%] -z-10 rounded-full bg-primary/15 blur-2xl" />
-            </span>
-            <span className="font-display text-xl font-black uppercase tracking-tighter text-ink-primary">
-              VerityAI
+            <BrandMark size={36} gapColor={scrolled ? '#F8FAFC' : '#F8FAFC'} />
+            <span className="font-display text-xl font-black lowercase tracking-tighter text-ink-primary">
+              verity
             </span>
             <span className="hidden items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 sm:inline-flex">
               <span className="relative flex size-1.5 items-center justify-center">
@@ -122,9 +120,9 @@ function Navbar() {
           >
             <div className="flex items-center justify-between px-6 py-6">
               <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-3">
-                <ShieldCheck size={26} className="text-primary" />
-                <span className="font-display text-xl font-black uppercase tracking-tighter text-ink-primary">
-                  VerityAI
+                <BrandMark size={30} />
+                <span className="font-display text-xl font-black lowercase tracking-tighter text-ink-primary">
+                  verity
                 </span>
               </Link>
               <button
@@ -615,9 +613,9 @@ function Footer() {
         <div className="grid grid-cols-2 gap-12 md:grid-cols-6">
           <div className="col-span-2">
             <div className="flex items-center gap-3">
-              <ShieldCheck size={26} className="text-primary" />
-              <span className="font-display text-xl font-black uppercase tracking-tighter text-ink-primary">
-                VerityAI
+              <BrandMark size={32} />
+              <span className="font-display text-xl font-black lowercase tracking-tighter text-ink-primary">
+                verity
               </span>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-ink-secondary">

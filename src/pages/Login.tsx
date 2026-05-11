@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { motion } from 'framer-motion'
 import {
+  AlertTriangle,
   ArrowLeft,
   Building2,
   Eye,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Paths } from '@contracts/constants'
 import { Button } from '@/components/ui-system'
+import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils'
 
 type Mode = 'login' | 'register'
@@ -112,15 +114,37 @@ function FormField({ label, icon, error, rightSlot, id, ...props }: InputProps) 
 
 export default function Login() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const loginAsDemo = useAuthStore((s) => s.loginAsDemo)
   const [mode, setMode] = useState<Mode>('login')
   const [showPw, setShowPw] = useState(false)
   const [showPw2, setShowPw2] = useState(false)
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('demo@verity.app')
+  const [fullName, setFullName] = useState('')
+  const [company, setCompany] = useState('')
+  const [oauthError, setOauthError] = useState<string | null>(null)
 
   const isRegister = mode === 'register'
 
+  useEffect(() => {
+    const err = searchParams.get('oauth_error')
+    if (err) {
+      setOauthError(err)
+      const next = new URLSearchParams(searchParams)
+      next.delete('oauth_error')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!email) return
+    loginAsDemo(
+      email,
+      fullName || email.split('@')[0],
+      company || (isRegister ? company : 'Demo Co.'),
+    )
     navigate('/dashboard')
   }
 
@@ -161,11 +185,49 @@ export default function Login() {
             : 'Welcome back to the forensic engine.'}
         </p>
 
+        {oauthError && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 flex items-start gap-3 rounded-2xl border border-status-fake/30 bg-status-fake-bg p-4"
+          >
+            <AlertTriangle size={18} className="mt-0.5 shrink-0 text-status-fake" />
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-status-fake">
+                Google Sign-In Failed
+              </p>
+              <p className="mt-1 break-words text-xs font-medium text-ink-secondary">
+                {oauthError}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOauthError(null)}
+              aria-label="Dismiss"
+              className="font-mono text-[10px] font-bold uppercase text-ink-muted hover:text-ink-primary"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           {isRegister && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Full Name" icon={<User size={16} />} placeholder="Ada Lovelace" />
-              <FormField label="Company" icon={<Building2 size={16} />} placeholder="VerityAI" />
+              <FormField
+                label="Full Name"
+                icon={<User size={16} />}
+                placeholder="Ada Lovelace"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+              <FormField
+                label="Company"
+                icon={<Building2 size={16} />}
+                placeholder="VerityAI"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+              />
             </div>
           )}
 
@@ -174,6 +236,8 @@ export default function Login() {
             type="email"
             icon={<Mail size={16} />}
             placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
 
@@ -253,7 +317,11 @@ export default function Login() {
           <GoogleIcon /> Continue with Google
         </button>
 
-        <p className="mt-8 text-center text-sm font-medium text-ink-secondary">
+        <p className="mt-4 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
+          Tip — any email + password works in Demo Mode
+        </p>
+
+        <p className="mt-6 text-center text-sm font-medium text-ink-secondary">
           {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             type="button"
