@@ -6,14 +6,16 @@ import {
   ShieldCheck,
   Wallet,
   X,
+  LogOut,
+  Sparkles,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/verify', icon: ShieldCheck, label: 'Verify' },
-  { to: '/history', icon: History, label: 'History' },
-  { to: '/wallet', icon: Wallet, label: 'Wallet' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', description: 'Command center' },
+  { to: '/verify', icon: ShieldCheck, label: 'Verify', description: 'New verification' },
+  { to: '/history', icon: History, label: 'History', description: 'Audit trail' },
+  { to: '/wallet', icon: Wallet, label: 'Wallet', description: 'Payments' },
 ]
 
 interface SidebarProps {
@@ -23,16 +25,17 @@ interface SidebarProps {
 
 function Brand() {
   return (
-    <NavLink to="/dashboard" className="flex items-center gap-3">
-      <div className="flex size-10 items-center justify-center rounded-lg bg-primary">
-        <ShieldCheck className="text-white" size={21} />
+    <NavLink to="/dashboard" className="flex items-center gap-3 group">
+      <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary-600 to-accent-cyan shadow-glow transition-transform group-hover:scale-105">
+        <ShieldCheck className="text-white relative z-10" size={20} strokeWidth={2.5} />
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
       </div>
       <div className="min-w-0">
-        <h1 className="font-display text-lg font-bold leading-tight text-ink-primary">
-          Verity
+        <h1 className="font-display text-base font-bold leading-tight text-ink-primary tracking-tight">
+          VerityAI
         </h1>
-        <p className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">
-          Trust, Verified.
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+          Trust Engine
         </p>
       </div>
     </NavLink>
@@ -48,47 +51,86 @@ function NavItems({ onSelect }: { onSelect?: () => void }) {
   }
 
   return (
-    <nav className="space-y-1.5 px-3 py-4">
-      {navItems.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          onClick={onSelect}
-          className={({ isActive }) =>
-            `flex min-h-11 items-center gap-3 rounded-lg border px-3 text-sm font-medium transition-colors ${
-              isActive || isActivePath(item.to)
-                ? 'border-primary/25 bg-primary/10 text-primary'
-                : 'border-transparent text-ink-secondary hover:border-surface-border hover:bg-surface-hover hover:text-ink-primary'
-            }`
-          }
-        >
-          <item.icon size={18} />
-          <span>{item.label}</span>
-        </NavLink>
-      ))}
+    <nav className="space-y-1 px-3 py-4">
+      <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+        Workspace
+      </p>
+      {navItems.map((item) => {
+        const active = isActivePath(item.to)
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            onClick={onSelect}
+            className={({ isActive }) =>
+              `group relative flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all duration-150 ${
+                isActive || active
+                  ? 'bg-primary/12 text-primary'
+                  : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary'
+              }`
+            }
+          >
+            {active && (
+              <motion.span
+                layoutId="sidebar-active"
+                className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
+            <item.icon size={17} strokeWidth={active ? 2.4 : 2} className="shrink-0" />
+            <span className="truncate">{item.label}</span>
+          </NavLink>
+        )
+      })}
     </nav>
   )
 }
 
 function UserProfile() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const initial = (user?.name || user?.fullName || 'U').charAt(0).toUpperCase()
 
   return (
-    <div className="border-t border-surface-border p-4">
-      <div className="flex min-w-0 items-center gap-3 rounded-lg border border-surface-border bg-surface-elevated px-3 py-3">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15">
-          <span className="text-xs font-semibold text-primary">{initial}</span>
+    <div className="border-t border-surface-border p-3">
+      <div className="rounded-2xl border border-surface-border bg-surface-elevated/60 p-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent-cyan text-xs font-bold text-white shadow-glow">
+            {initial}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-ink-primary">
+              {user?.fullName || user?.name || 'User'}
+            </p>
+            <p className="truncate text-[11px] text-ink-muted">
+              {user?.email || 'Signed in'}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-ink-primary">
-            {user?.fullName || user?.name || 'User'}
-          </p>
-          <p className="truncate text-[11px] text-ink-muted">
-            {user?.email || 'Signed in'}
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => logout()}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-surface-border bg-surface-card px-3 py-2 text-xs font-medium text-ink-secondary transition-colors hover:border-status-fake/30 hover:bg-status-fake/5 hover:text-status-fake"
+        >
+          <LogOut size={13} />
+          Sign out
+        </button>
       </div>
+    </div>
+  )
+}
+
+function UpgradeBanner() {
+  const { user } = useAuth()
+  if (user?.plan === 'pro' || user?.plan === 'enterprise') return null
+  return (
+    <div className="mx-3 mb-3 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-accent-cyan/5 to-transparent p-4">
+      <div className="flex items-center gap-2">
+        <Sparkles size={14} className="text-primary" />
+        <p className="text-xs font-semibold text-ink-primary">Upgrade to Pro</p>
+      </div>
+      <p className="mt-1 text-[11px] leading-snug text-ink-muted">
+        Bulk verifications, team seats, and detailed reports.
+      </p>
     </div>
   )
 }
@@ -96,13 +138,14 @@ function UserProfile() {
 export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
-      <aside className="hidden w-64 shrink-0 border-r border-surface-border bg-surface-card lg:flex lg:flex-col">
-        <div className="border-b border-surface-border p-6">
+      <aside className="hidden w-64 shrink-0 border-r border-surface-border bg-sidebar lg:flex lg:flex-col">
+        <div className="border-b border-surface-border p-5">
           <Brand />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto scrollbar-thin">
           <NavItems />
         </div>
+        <UpgradeBanner />
         <UserProfile />
       </aside>
 
@@ -112,7 +155,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             <motion.button
               type="button"
               aria-label="Close navigation"
-              className="fixed inset-0 z-40 bg-black/65 lg:hidden"
+              className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm lg:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -122,7 +165,7 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
-              className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-surface-border bg-surface-card lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,calc(100vw-2rem))] flex-col border-r border-surface-border bg-sidebar lg:hidden"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -134,14 +177,15 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   type="button"
                   aria-label="Close navigation"
                   onClick={onMobileClose}
-                  className="flex size-10 items-center justify-center rounded-lg border border-surface-border bg-surface-elevated text-ink-secondary transition-colors hover:text-ink-primary"
+                  className="flex size-9 items-center justify-center rounded-lg border border-surface-border bg-surface-elevated text-ink-secondary transition-colors hover:text-ink-primary"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto py-2">
                 <NavItems onSelect={onMobileClose} />
               </div>
+              <UpgradeBanner />
               <UserProfile />
             </motion.aside>
           </>

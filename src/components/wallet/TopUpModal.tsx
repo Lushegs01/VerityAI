@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, CreditCard, Building2, Zap } from 'lucide-react'
+import {
+  X,
+  CreditCard,
+  Building2,
+  Zap,
+  CheckCircle2,
+  Lock,
+  ShieldCheck,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
 import { trpc } from '@/providers/trpc'
+import { Button, Field } from '@/components/ui-system'
 
 interface TopUpModalProps {
   onClose: () => void
@@ -17,13 +26,13 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   const utils = trpc.useUtils()
 
   const finalAmount = customAmount.trim() ? Number(customAmount) : amount
+
   const topUpMutation = trpc.wallet.topup.useMutation({
     onSuccess: async (data) => {
       await Promise.all([
         utils.wallet.balance.invalidate(),
         utils.wallet.transactions.invalidate(),
         utils.auth.me.invalidate(),
-        utils.auth.getExtendedUser.invalidate(),
       ])
       toast.success(`N${data.amount.toLocaleString()} added to wallet`)
       onClose()
@@ -42,157 +51,190 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
     topUpMutation.mutate({ amount: finalAmount, method })
   }
 
+  const fee = Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015) : 0
+  const total = Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015) : 0
+
   return (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="topup-title"
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          exit={{ opacity: 0, scale: 0.95, y: 12 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-surface-card border border-surface-border rounded-2xl w-full max-w-md overflow-hidden"
+          className="w-full max-w-md overflow-hidden rounded-3xl border border-surface-border bg-surface-card shadow-2xl"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-surface-border">
-            <h2 className="font-display text-lg text-ink-primary">Top Up Wallet</h2>
+          <div className="flex items-center justify-between border-b border-surface-border px-6 py-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent-cyan/10 ring-1 ring-primary/20">
+                <CreditCard size={16} className="text-primary" />
+              </div>
+              <div>
+                <h2 id="topup-title" className="font-display text-base font-bold tracking-tight text-ink-primary">
+                  Top Up Wallet
+                </h2>
+                <p className="text-[11px] text-ink-muted">Secured by Squad Payments</p>
+              </div>
+            </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-surface-hover transition-colors"
+              className="flex size-9 items-center justify-center rounded-lg border border-surface-border text-ink-muted transition-colors hover:bg-surface-hover hover:text-ink-primary"
+              aria-label="Close"
             >
-              <X size={18} className="text-ink-muted" />
+              <X size={15} />
             </button>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-5">
             {/* Method selector */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-surface-border bg-surface-elevated p-1">
               <button
                 onClick={() => setMethod('card')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-medium transition-colors ${
+                className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
                   method === 'card'
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-surface-border text-ink-secondary hover:bg-surface-hover'
+                    ? 'bg-surface-card text-ink-primary shadow-sm ring-1 ring-surface-border'
+                    : 'text-ink-secondary hover:text-ink-primary'
                 }`}
               >
-                <CreditCard size={16} />
-                Card Payment
+                <CreditCard size={14} />
+                Card payment
               </button>
               <button
                 onClick={() => setMethod('transfer')}
-                className={`flex items-center justify-center gap-2 p-3 rounded-xl border text-sm font-medium transition-colors ${
+                className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-colors ${
                   method === 'transfer'
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-surface-border text-ink-secondary hover:bg-surface-hover'
+                    ? 'bg-surface-card text-ink-primary shadow-sm ring-1 ring-surface-border'
+                    : 'text-ink-secondary hover:text-ink-primary'
                 }`}
               >
-                <Building2 size={16} />
-                Bank Transfer
+                <Building2 size={14} />
+                Bank transfer
               </button>
             </div>
 
             {method === 'card' ? (
               <>
-                {/* Amount selector */}
                 <div>
-                  <label className="block text-xs text-ink-muted uppercase tracking-wider font-semibold mb-3">
-                    Select Amount
-                  </label>
+                  <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">
+                    Select amount
+                  </p>
                   <div className="grid grid-cols-3 gap-2">
-                    {amounts.map((a) => (
-                      <button
-                        key={a}
-                        onClick={() => { setAmount(a); setCustomAmount(''); }}
-                        className={`p-3 rounded-xl border text-sm font-medium transition-colors ${
-                          amount === a && !customAmount
-                            ? 'border-primary bg-primary/5 text-primary'
-                            : 'border-surface-border text-ink-secondary hover:bg-surface-hover'
-                        }`}
-                      >
-                        N{a.toLocaleString()}
-                      </button>
-                    ))}
+                    {amounts.map((a) => {
+                      const active = amount === a && !customAmount
+                      return (
+                        <button
+                          key={a}
+                          onClick={() => {
+                            setAmount(a)
+                            setCustomAmount('')
+                          }}
+                          className={`rounded-xl border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                            active
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-surface-border bg-surface-elevated text-ink-secondary hover:border-primary/30 hover:bg-surface-hover'
+                          }`}
+                        >
+                          N{a.toLocaleString()}
+                        </button>
+                      )
+                    })}
                   </div>
                   <div className="mt-3">
-                    <label className="block text-xs text-ink-muted mb-1.5">Or enter custom amount</label>
-                    <input
+                    <Field
+                      label="Or enter custom amount"
                       type="number"
                       value={customAmount}
                       onChange={(e) => setCustomAmount(e.target.value)}
-                      placeholder="Enter amount"
-                      className="w-full bg-surface-elevated border border-surface-border rounded-xl px-4 py-2.5 text-sm text-ink-primary placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                      placeholder="Minimum N500"
+                      min={500}
                     />
                   </div>
                 </div>
 
                 {/* Summary */}
-                <div className="p-4 rounded-xl bg-surface-elevated border border-surface-border">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-ink-muted">Amount</span>
-                    <span className="text-ink-primary font-medium">
-                      N{Number.isFinite(finalAmount) ? finalAmount.toLocaleString() : '0'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-ink-muted">Fee (1.5%)</span>
-                    <span className="text-ink-primary font-medium">
-                      N{Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015).toLocaleString() : '0'}
-                    </span>
-                  </div>
-                  <div className="border-t border-surface-border pt-2 flex items-center justify-between text-sm">
-                    <span className="text-ink-primary font-semibold">Total</span>
-                    <span className="text-ink-primary font-mono font-bold">
-                      N{Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015).toLocaleString() : '0'}
-                    </span>
-                  </div>
+                <div className="rounded-xl border border-surface-border bg-surface-elevated/60 p-4">
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <dt className="text-ink-muted">Amount</dt>
+                      <dd className="font-mono text-ink-primary">
+                        N{Number.isFinite(finalAmount) ? finalAmount.toLocaleString() : '0'}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt className="text-ink-muted">Processing fee (1.5%)</dt>
+                      <dd className="font-mono text-ink-primary">N{fee.toLocaleString()}</dd>
+                    </div>
+                    <div className="flex justify-between border-t border-surface-border pt-2">
+                      <dt className="text-sm font-semibold text-ink-primary">Total</dt>
+                      <dd className="font-mono text-lg font-bold text-ink-primary">
+                        N{total.toLocaleString()}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
 
-                {/* Pay button */}
-                <motion.button
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
+                <Button
+                  fullWidth
+                  size="lg"
                   onClick={handleSubmit}
-                  disabled={topUpMutation.isPending}
-                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  loading={topUpMutation.isPending}
+                  leftIcon={<Zap size={14} />}
                 >
-                  {topUpMutation.isPending ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Zap size={16} />
-                  )}
-                  Pay with Squad
-                </motion.button>
+                  Confirm Payment
+                </Button>
               </>
             ) : (
-              /* Bank Transfer */
-              <div className="text-center py-4">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-center">
-                  <Building2 size={28} className="text-primary" />
+              <div className="text-center">
+                <div className="mx-auto flex size-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
+                  <Building2 size={26} className="text-primary" />
                 </div>
-                <h3 className="text-sm font-semibold text-ink-primary mb-1">GTBank Virtual Account</h3>
-                <p className="font-mono text-2xl font-bold text-ink-primary mb-1">0012345678</p>
-                <p className="text-sm text-ink-muted mb-4">
-                  Transfer to this account from any Nigerian bank
+                <h3 className="mt-4 font-display text-sm font-semibold text-ink-primary">
+                  GTBank Virtual Account
+                </h3>
+                <p className="mt-3 font-mono text-2xl font-bold tracking-tight text-ink-primary">
+                  0012345678
                 </p>
-                <div className="p-3 rounded-xl bg-surface-elevated border border-surface-border">
-                  <p className="text-xs text-ink-muted">
-                    Demo transfers are credited through the same wallet ledger used by card payments.
+                <p className="mt-1 text-xs text-ink-muted">
+                  Transfer from any Nigerian bank to credit your wallet
+                </p>
+
+                <div className="mt-4 rounded-xl border border-surface-border bg-surface-elevated p-3">
+                  <p className="text-[11px] text-ink-muted">
+                    Demo transfers credit through the same Squad-backed wallet ledger used by card
+                    payments.
                   </p>
                 </div>
-                <button
+
+                <Button
+                  fullWidth
+                  size="lg"
+                  className="mt-4"
                   onClick={handleSubmit}
-                  disabled={topUpMutation.isPending}
-                  className="mt-4 w-full rounded-xl bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-dark disabled:opacity-50"
+                  loading={topUpMutation.isPending}
+                  leftIcon={<CheckCircle2 size={14} />}
                 >
                   Credit Demo Transfer
-                </button>
+                </Button>
               </div>
             )}
+
+            <div className="flex items-center justify-between rounded-xl border border-surface-border bg-surface-elevated/50 px-3 py-2.5">
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-muted">
+                <Lock size={11} /> 256-bit encrypted
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-muted">
+                <ShieldCheck size={11} /> NDPR compliant
+              </span>
+            </div>
           </div>
         </motion.div>
       </motion.div>

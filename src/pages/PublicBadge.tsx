@@ -1,125 +1,179 @@
-import { useParams } from 'react-router'
+import { useParams, Link } from 'react-router'
 import { motion } from 'framer-motion'
-import { ShieldCheck, Clock, Eye } from 'lucide-react'
+import {
+  ShieldCheck,
+  Clock,
+  Eye,
+  Lock,
+  ExternalLink,
+  ArrowRight,
+} from 'lucide-react'
 import TrustScoreRing from '@/components/trust/TrustScoreRing'
 import { trpc } from '@/providers/trpc'
+import { Button, EmptyState } from '@/components/ui-system'
 
 export default function PublicBadge() {
   const { token } = useParams<{ token: string }>()
   const { data: badge, isLoading } = trpc.public.badge.useQuery(
     { token: token! },
-    { enabled: !!token }
+    { enabled: !!token },
   )
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-surface-base flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-surface-base">
+        <div className="size-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     )
   }
 
   if (!badge) {
     return (
-      <div className="min-h-screen bg-surface-base flex items-center justify-center px-4">
-        <div className="text-center">
-          <ShieldCheck size={48} className="text-ink-muted mx-auto mb-4" />
-          <h1 className="font-display text-xl text-ink-primary mb-2">Badge Not Found</h1>
-          <p className="text-sm text-ink-muted">This verification badge doesn't exist or has expired.</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-surface-base px-4">
+        <EmptyState
+          icon={ShieldCheck}
+          title="Badge not found"
+          description="This verification badge doesn't exist or has expired."
+          action={
+            <Link to="/">
+              <Button variant="secondary" rightIcon={<ArrowRight size={14} />}>
+                Visit VerityAI
+              </Button>
+            </Link>
+          }
+        />
       </div>
     )
   }
 
-  return (
-    <div className="min-h-screen bg-surface-base noise-overlay flex items-center justify-center px-4 py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full"
-      >
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center">
-              <ShieldCheck className="text-white" size={18} />
-            </div>
-            <span className="font-display font-bold text-ink-primary">Verity</span>
-          </div>
-          <p className="text-sm text-ink-muted">Verified Academic Credential</p>
-        </div>
+  const verdict = badge.verdict || 'SUSPICIOUS'
 
-        {/* Badge Card */}
-        <div className="bg-surface-card border border-surface-border rounded-2xl overflow-hidden">
-          {/* Verdict banner */}
-          <div className={`py-3 px-6 text-center ${
-            badge.verdict === 'VERIFIED'
-              ? 'bg-status-verified/10 border-b border-status-verified/20'
-              : badge.verdict === 'SUSPICIOUS'
-                ? 'bg-status-suspicious/10 border-b border-status-suspicious/20'
-                : 'bg-status-fake/10 border-b border-status-fake/20'
-          }`}>
-            <span className={`text-sm font-bold uppercase tracking-wider ${
-              badge.verdict === 'VERIFIED'
-                ? 'text-status-verified'
-                : badge.verdict === 'SUSPICIOUS'
-                  ? 'text-status-suspicious'
-                  : 'text-status-fake'
-            }`}>
-              {badge.verdict}
+  return (
+    <div className="relative min-h-screen bg-surface-base px-4 py-12">
+      <div className="absolute inset-0 -z-10 bg-grid-pattern opacity-[0.4]" aria-hidden />
+      <div className="absolute left-1/2 top-1/3 -z-10 size-[500px] -translate-x-1/2 rounded-full bg-primary/10 blur-[120px]" aria-hidden />
+
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mx-auto max-w-md"
+      >
+        <Link to="/" className="mb-6 flex items-center justify-center gap-2.5 group">
+          <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary-600 to-accent-cyan shadow-glow">
+            <ShieldCheck className="text-white" size={18} strokeWidth={2.5} />
+          </div>
+          <span className="font-display text-base font-bold tracking-tight text-ink-primary">
+            VerityAI
+          </span>
+        </Link>
+
+        <p className="mb-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-ink-muted">
+          Public verification badge
+        </p>
+
+        <div className="overflow-hidden rounded-3xl border border-surface-border bg-surface-card shadow-2xl">
+          <div
+            className={`px-6 py-3 text-center text-xs font-bold uppercase tracking-[0.18em] ${
+              verdict === 'VERIFIED'
+                ? 'bg-status-verified/10 text-status-verified border-b border-status-verified/25'
+                : verdict === 'SUSPICIOUS'
+                  ? 'bg-status-suspicious/10 text-status-suspicious border-b border-status-suspicious/25'
+                  : 'bg-status-fake/10 text-status-fake border-b border-status-fake/25'
+            }`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className={`size-1.5 rounded-full ${
+                  verdict === 'VERIFIED'
+                    ? 'bg-status-verified animate-pulse'
+                    : verdict === 'SUSPICIOUS'
+                      ? 'bg-status-suspicious'
+                      : 'bg-status-fake'
+                }`}
+              />
+              {verdict.replace('_', ' ')}
             </span>
           </div>
 
-          <div className="p-8">
-            <div className="flex justify-center mb-6">
+          <div className="p-7">
+            <div className="flex justify-center">
               <TrustScoreRing
                 score={badge.trustScore || 0}
-                verdict={badge.verdict || 'SUSPICIOUS'}
+                verdict={verdict}
                 size={160}
               />
             </div>
 
-            <div className="text-center mb-6">
-              <h2 className="font-display text-xl text-ink-primary mb-1">
+            <div className="mt-6 text-center">
+              <h2 className="font-display text-xl font-bold tracking-tight text-ink-primary">
                 {badge.applicantName}
               </h2>
-              <p className="text-sm text-ink-muted">
-                {badge.certificateType} - {badge.institutionName}
+              <p className="mt-1 text-sm text-ink-muted">
+                {badge.certificateType}
+                {badge.institutionName && <> &middot; {badge.institutionName}</>}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="p-3 rounded-lg bg-surface-elevated border border-surface-border text-center">
-                <Clock size={14} className="text-ink-muted mx-auto mb-1" />
-                <p className="text-[10px] text-ink-muted uppercase">Verified On</p>
-                <p className="text-xs font-medium text-ink-primary">
-                  {badge.verifiedAt ? new Date(badge.verifiedAt).toLocaleDateString() : '-'}
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-surface-border bg-surface-elevated/60 p-3 text-center">
+                <Clock size={13} className="mx-auto text-ink-muted" />
+                <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-muted">
+                  Verified on
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-ink-primary">
+                  {badge.verifiedAt
+                    ? new Date(badge.verifiedAt).toLocaleDateString('en-NG', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : '—'}
                 </p>
               </div>
-              <div className="p-3 rounded-lg bg-surface-elevated border border-surface-border text-center">
-                <Eye size={14} className="text-ink-muted mx-auto mb-1" />
-                <p className="text-[10px] text-ink-muted uppercase">Views</p>
-                <p className="text-xs font-medium text-ink-primary">{badge.viewCount || 0}</p>
+              <div className="rounded-xl border border-surface-border bg-surface-elevated/60 p-3 text-center">
+                <Eye size={13} className="mx-auto text-ink-muted" />
+                <p className="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-muted">
+                  Public views
+                </p>
+                <p className="mt-0.5 font-mono text-xs font-semibold text-ink-primary">
+                  {badge.viewCount || 0}
+                </p>
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-surface-elevated border border-surface-border">
-              <p className="text-[10px] text-ink-muted text-center uppercase tracking-wider mb-1">
-                This badge expires on
+            <div className="mt-3 rounded-xl border border-surface-border bg-surface-elevated/60 p-3">
+              <p className="text-center text-[10px] font-bold uppercase tracking-wider text-ink-muted">
+                Badge expires
               </p>
-              <p className="text-xs font-mono text-center text-ink-primary">
-                {badge.expiresAt ? new Date(badge.expiresAt).toLocaleDateString() : '-'}
+              <p className="mt-1 text-center font-mono text-xs font-semibold text-ink-primary">
+                {badge.expiresAt
+                  ? new Date(badge.expiresAt).toLocaleDateString('en-NG', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
+                  : '—'}
               </p>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-surface-border text-center">
-            <p className="text-[10px] text-ink-muted">
-              Verified by Verity - Nigeria's AI Truth Engine for Academic Credentials
-            </p>
+          <div className="flex items-center justify-between border-t border-surface-border bg-surface-elevated/40 px-6 py-4">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-ink-muted">
+              <Lock size={11} /> Verified by VerityAI
+            </span>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+            >
+              Learn more
+              <ExternalLink size={11} />
+            </Link>
           </div>
         </div>
+
+        <p className="mt-6 text-center text-[11px] text-ink-muted">
+          This badge is generated by VerityAI's institutional trust engine.
+        </p>
       </motion.div>
     </div>
   )

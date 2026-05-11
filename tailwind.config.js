@@ -5,8 +5,8 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
-        body: ['DM Sans', 'sans-serif'],
+        display: ['Inter', 'DM Sans', 'sans-serif'],
+        body: ['Inter', 'DM Sans', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
@@ -16,10 +16,20 @@ module.exports = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "#E51E56",
-          dark: "#B8143F",
-          light: "#FF3D6E",
-          foreground: "#FFFFFF",
+          DEFAULT: "hsl(var(--primary))",
+          50: "#EFF6FF",
+          100: "#DBEAFE",
+          200: "#BFDBFE",
+          300: "#93C5FD",
+          400: "#60A5FA",
+          500: "#3B82F6",
+          600: "#2563EB",
+          700: "#1D4ED8",
+          800: "#1E40AF",
+          900: "#1E3A8A",
+          dark: "#1E40AF",
+          light: "#60A5FA",
+          foreground: "hsl(var(--primary-foreground))",
         },
         surface: {
           base: "hsl(var(--surface-base) / <alpha-value>)",
@@ -31,15 +41,20 @@ module.exports = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-          cyan: "#00D4FF",
+          cyan: "#22D3EE",
+          emerald: "#10B981",
+          purple: "#A855F7",
+          indigo: "#6366F1",
         },
         status: {
-          verified: "#00C896",
-          "verified-bg": "rgba(0, 200, 150, 0.08)",
+          verified: "#10B981",
+          "verified-bg": "rgba(16, 185, 129, 0.08)",
           suspicious: "#F59E0B",
           "suspicious-bg": "rgba(245, 158, 11, 0.08)",
-          fake: "#FF4757",
-          "fake-bg": "rgba(255, 71, 87, 0.08)",
+          fake: "#EF4444",
+          "fake-bg": "rgba(239, 68, 68, 0.08)",
+          info: "#3B82F6",
+          "info-bg": "rgba(59, 130, 246, 0.08)",
         },
         ink: {
           primary: "hsl(var(--ink-primary) / <alpha-value>)",
@@ -83,11 +98,14 @@ module.exports = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
         xs: "calc(var(--radius) - 6px)",
-        "2xl": "1rem",
-        "3xl": "1.25rem",
+        "2xl": "1.25rem",
+        "3xl": "1.5rem",
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        soft: "0 2px 8px -2px rgb(0 0 0 / 0.08), 0 4px 16px -4px rgb(0 0 0 / 0.06)",
+        glow: "0 0 0 1px hsl(var(--primary) / 0.2), 0 12px 32px -12px hsl(var(--primary) / 0.5)",
+        "glow-accent": "0 0 0 1px hsl(var(--accent) / 0.2), 0 12px 32px -12px hsl(var(--accent) / 0.5)",
       },
       keyframes: {
         "accordion-down": {
@@ -110,6 +128,14 @@ module.exports = {
           from: { opacity: "0", transform: "translateY(20px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "gradient-shift": {
+          "0%, 100%": { "background-position": "0% 50%" },
+          "50%": { "background-position": "100% 50%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -117,6 +143,8 @@ module.exports = {
         "caret-blink": "caret-blink 1.25s ease-out infinite",
         "count-up": "count-up 0.5s ease-out",
         "slide-up": "slide-up 0.4s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
+        "gradient-shift": "gradient-shift 6s ease infinite",
       },
     },
   },

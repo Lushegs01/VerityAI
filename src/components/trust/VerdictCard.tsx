@@ -1,10 +1,21 @@
 import { motion } from 'framer-motion'
-import { Copy, Download, Share2, Flag, FileSearch } from 'lucide-react'
+import {
+  Copy,
+  Download,
+  Share2,
+  Flag,
+  CheckCircle2,
+  ShieldCheck,
+  AlertTriangle,
+  XCircle,
+  Sparkles,
+} from 'lucide-react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import TrustScoreRing from './TrustScoreRing'
+import { Badge, Button, Panel, PanelBody, PanelHeader, PanelTitle } from '@/components/ui-system'
 
-interface Flag {
+interface FlagItem {
   type: string
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
   field: string
@@ -29,7 +40,7 @@ interface VerdictCardProps {
     aiConfidence: number | null
     aiVerdict: string | null
     aiReasoning: string | null
-    aiFlags: Flag[] | string | null
+    aiFlags: FlagItem[] | string | null
     ruleScore: number | null
     imageQuality: string | null
     processingTimeMs: number | null
@@ -37,16 +48,43 @@ interface VerdictCardProps {
   }
 }
 
-function normalizeFlags(value: Flag[] | string | null): Flag[] {
+function normalizeFlags(value: FlagItem[] | string | null): FlagItem[] {
   if (Array.isArray(value)) return value
   if (!value) return []
 
   try {
     const parsed = JSON.parse(value) as unknown
-    return Array.isArray(parsed) ? (parsed as Flag[]) : []
+    return Array.isArray(parsed) ? (parsed as FlagItem[]) : []
   } catch {
     return []
   }
+}
+
+const verdictMeta: Record<
+  string,
+  { tone: 'verified' | 'suspicious' | 'fake'; title: string; icon: typeof ShieldCheck; recommend: string; risk: string }
+> = {
+  VERIFIED: {
+    tone: 'verified',
+    title: 'Document Verified',
+    icon: ShieldCheck,
+    recommend: 'Approve',
+    risk: 'Low',
+  },
+  SUSPICIOUS: {
+    tone: 'suspicious',
+    title: 'Manual Review Recommended',
+    icon: AlertTriangle,
+    recommend: 'Request Review',
+    risk: 'Medium',
+  },
+  LIKELY_FAKE: {
+    tone: 'fake',
+    title: 'Likely Forgery Detected',
+    icon: XCircle,
+    recommend: 'Reject',
+    risk: 'High',
+  },
 }
 
 export default function VerdictCard({ certificate }: VerdictCardProps) {
@@ -54,6 +92,8 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
   const [showAllFlags, setShowAllFlags] = useState(false)
 
   const flags = normalizeFlags(certificate.aiFlags)
+  const meta = verdictMeta[certificate.verdict || ''] || verdictMeta.SUSPICIOUS
+  const VerdictIcon = meta.icon
 
   const copyId = () => {
     navigator.clipboard.writeText(certificate.publicId)
@@ -90,11 +130,21 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
 
   const severityColor = (s: string) => {
     switch (s) {
-      case 'CRITICAL': return 'text-status-fake bg-status-fake-bg border-status-fake/20'
-      case 'HIGH': return 'text-orange-400 bg-orange-400/8 border-orange-400/20'
-      case 'MEDIUM': return 'text-status-suspicious bg-status-suspicious-bg border-status-suspicious/20'
-      default: return 'text-ink-muted bg-surface-hover border-surface-border'
+      case 'CRITICAL':
+        return 'border-status-fake/30 bg-status-fake/8'
+      case 'HIGH':
+        return 'border-status-fake/25 bg-status-fake/5'
+      case 'MEDIUM':
+        return 'border-status-suspicious/25 bg-status-suspicious/5'
+      default:
+        return 'border-surface-border bg-surface-elevated'
     }
+  }
+
+  const severityBadgeTone = (s: string): 'danger' | 'warning' | 'neutral' => {
+    if (s === 'CRITICAL' || s === 'HIGH') return 'danger'
+    if (s === 'MEDIUM') return 'warning'
+    return 'neutral'
   }
 
   const scoreColor = (score: number) => {
@@ -104,17 +154,11 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="overflow-hidden rounded-lg border border-surface-border bg-surface-card"
-    >
-      {/* Header: Trust Score + Basic Info */}
-      <div className="p-6 border-b border-surface-border">
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
-          {/* Trust Score Ring */}
-          <div className="flex-shrink-0 mx-auto lg:mx-0">
+    <div className="space-y-4">
+      {/* Top: Trust score + summary */}
+      <Panel className="overflow-hidden">
+        <div className="grid gap-6 p-6 lg:grid-cols-[260px_1fr] lg:p-8">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-surface-border bg-surface-elevated/40 p-5">
             <TrustScoreRing
               score={certificate.trustScore || 0}
               verdict={certificate.verdict || 'SUSPICIOUS'}
@@ -122,76 +166,98 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
             />
           </div>
 
-          {/* Certificate Info */}
-          <div className="flex-1 w-full">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs text-ink-muted font-mono">ID: {certificate.publicId}</span>
-              <button
-                onClick={copyId}
-                className="p-1 rounded hover:bg-surface-hover transition-colors"
-              >
-                <Copy size={12} className={copied ? 'text-status-verified' : 'text-ink-muted'} />
-              </button>
+          <div className="flex flex-col">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[11px] uppercase tracking-wider text-ink-muted">
+                    ID: {certificate.publicId}
+                  </span>
+                  <button
+                    onClick={copyId}
+                    className="rounded-md p-1 transition-colors hover:bg-surface-hover"
+                    aria-label="Copy ID"
+                  >
+                    {copied ? (
+                      <CheckCircle2 size={11} className="text-status-verified" />
+                    ) : (
+                      <Copy size={11} className="text-ink-muted" />
+                    )}
+                  </button>
+                </div>
+                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-ink-primary truncate">
+                  {certificate.applicantName || 'Unknown Applicant'}
+                </h2>
+                <p className="mt-0.5 text-sm text-ink-secondary">
+                  {certificate.certificateType}
+                  {certificate.institutionName && <> &middot; {certificate.institutionName}</>}
+                </p>
+              </div>
+              <Badge tone={meta.tone} dot>
+                <VerdictIcon size={11} />
+                {certificate.verdict?.replace('_', ' ')}
+              </Badge>
             </div>
 
-            <h2 className="font-display text-xl text-ink-primary mb-3">
-              {certificate.applicantName || 'Unknown Candidate'}
-            </h2>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Stat label="Trust Score" value={`${certificate.trustScore || 0}%`} highlight={meta.tone} />
+              <Stat label="Risk Level" value={meta.risk} highlight={meta.tone} />
+              <Stat
+                label="AI Confidence"
+                value={`${certificate.aiConfidence ?? 0}%`}
+              />
+              <Stat
+                label="Processing"
+                value={
+                  certificate.processingTimeMs
+                    ? `${(certificate.processingTimeMs / 1000).toFixed(1)}s`
+                    : '—'
+                }
+              />
+            </div>
 
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              {certificate.institutionName && (
-                <div>
-                  <span className="text-ink-muted">Institution:</span>{' '}
-                  <span className="text-ink-primary">{certificate.institutionName}</span>
-                </div>
-              )}
-              {certificate.certificateType && (
-                <div>
-                  <span className="text-ink-muted">Type:</span>{' '}
-                  <span className="text-ink-primary">{certificate.certificateType}</span>
-                </div>
-              )}
+            <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
               {certificate.graduationYear && (
                 <div>
-                  <span className="text-ink-muted">Year:</span>{' '}
-                  <span className="text-ink-primary">{certificate.graduationYear}</span>
+                  <p className="text-[10px] uppercase tracking-wider text-ink-muted">Year</p>
+                  <p className="text-ink-primary">{certificate.graduationYear}</p>
                 </div>
               )}
               {certificate.regNumber && (
                 <div>
-                  <span className="text-ink-muted">Reg No:</span>{' '}
-                  <span className="font-mono text-ink-primary">{certificate.regNumber}</span>
+                  <p className="text-[10px] uppercase tracking-wider text-ink-muted">Reg No</p>
+                  <p className="font-mono text-ink-primary">{certificate.regNumber}</p>
                 </div>
               )}
-            </div>
-
-            {/* AI Confidence */}
-            <div className="mt-4 flex items-center gap-2">
-              <FileSearch size={14} className="text-ink-muted" />
-              <span className="text-xs text-ink-muted">
-                AI Confidence: <span className="font-mono text-ink-primary">{certificate.aiConfidence}%</span>
-              </span>
               {certificate.imageQuality && (
-                <span className="text-xs text-ink-muted">
-                  Quality: <span className="font-mono text-ink-primary">{certificate.imageQuality}</span>
-                </span>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-ink-muted">Quality</p>
+                  <p className="text-ink-primary capitalize">{certificate.imageQuality}</p>
+                </div>
               )}
-              {certificate.processingTimeMs && (
-                <span className="text-xs text-ink-muted">
-                  Time: <span className="font-mono text-ink-primary">{(certificate.processingTimeMs / 1000).toFixed(1)}s</span>
-                </span>
+              {certificate.createdAt && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-ink-muted">Verified</p>
+                  <p className="text-ink-primary">
+                    {new Date(certificate.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
               )}
             </div>
           </div>
         </div>
-      </div>
+      </Panel>
 
-      {/* AI Analysis Scores */}
-      <div className="p-6 border-b border-surface-border">
-        <h3 className="text-sm font-semibold text-ink-primary mb-4 uppercase tracking-wider">
-          AI Analysis Breakdown
-        </h3>
-        <div className="space-y-3">
+      {/* AI Findings */}
+      <Panel>
+        <PanelHeader>
+          <div>
+            <PanelTitle>AI Findings</PanelTitle>
+            <p className="mt-0.5 text-xs text-ink-muted">Score breakdown across forensic checks</p>
+          </div>
+          <Sparkles size={14} className="text-primary" />
+        </PanelHeader>
+        <PanelBody className="space-y-3">
           {[
             { label: 'Visual Integrity', score: certificate.aiVisualIntegrity || 0 },
             { label: 'Data Plausibility', score: certificate.aiDataPlausibility || 0 },
@@ -199,116 +265,142 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
             { label: 'Security Features', score: certificate.aiSecurityFeatures || 0 },
             { label: 'Anomaly Score', score: certificate.aiAnomaly || 0 },
             { label: 'Rule Engine', score: certificate.ruleScore || 0 },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center gap-3">
-              <span className="text-xs text-ink-muted w-32 flex-shrink-0">{item.label}</span>
-              <div className="flex-1 h-2 bg-surface-elevated rounded-full overflow-hidden">
+          ].map((item, i) => (
+            <div key={item.label} className="grid grid-cols-[140px_1fr_56px] items-center gap-3">
+              <span className="text-xs font-medium text-ink-secondary truncate">{item.label}</span>
+              <div className="h-2.5 overflow-hidden rounded-full bg-surface-elevated">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${item.score}%` }}
-                  transition={{ duration: 1, delay: 0.5 }}
+                  transition={{ duration: 0.9, delay: 0.2 + i * 0.05 }}
                   className={`h-full rounded-full ${
                     item.score >= 80
                       ? 'bg-gradient-to-r from-status-verified to-accent-cyan'
                       : item.score >= 50
-                        ? 'bg-gradient-to-r from-status-suspicious to-orange-400'
-                        : 'bg-gradient-to-r from-status-fake to-primary'
+                        ? 'bg-gradient-to-r from-status-suspicious to-amber-400'
+                        : 'bg-gradient-to-r from-status-fake to-rose-500'
                   }`}
                 />
               </div>
-              <span className={`text-xs font-mono w-10 text-right ${scoreColor(item.score)}`}>
+              <span className={`text-right font-mono text-xs font-semibold ${scoreColor(item.score)}`}>
                 {item.score}
               </span>
             </div>
           ))}
-        </div>
 
-        {/* AI Reasoning */}
-        {certificate.aiReasoning && (
-          <div className="mt-4 rounded-lg border border-surface-border bg-surface-elevated p-3">
-            <p className="text-xs text-ink-muted uppercase tracking-wider mb-1">AI Reasoning</p>
-            <p className="text-sm text-ink-primary italic leading-relaxed">
-              {certificate.aiReasoning}
-            </p>
-          </div>
-        )}
-      </div>
+          {certificate.aiReasoning && (
+            <div className="mt-5 rounded-xl border border-surface-border bg-surface-elevated/40 p-4">
+              <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">
+                AI Reasoning
+              </p>
+              <p className="text-sm leading-relaxed text-ink-primary">{certificate.aiReasoning}</p>
+            </div>
+          )}
+        </PanelBody>
+      </Panel>
 
       {/* Flags */}
       {flags.length > 0 && (
-        <div className="p-6 border-b border-surface-border">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="text-sm font-semibold text-ink-primary uppercase tracking-wider">
-              Flags
-            </h3>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-status-fake/10 text-status-fake">
-              {flags.length}
+        <Panel>
+          <PanelHeader>
+            <div className="flex items-center gap-2">
+              <PanelTitle>Risk Flags</PanelTitle>
+              <Badge tone="danger" size="sm">
+                {flags.length}
+              </Badge>
+            </div>
+            <span className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">
+              Auto-detected
             </span>
-          </div>
-          <div className="space-y-2">
+          </PanelHeader>
+          <PanelBody className="space-y-2">
             {(showAllFlags ? flags : flags.slice(0, 3)).map((flag, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, x: -10 }}
+                initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1.2 + i * 0.1 }}
-                className={`rounded-lg border p-3 ${severityColor(flag.severity)}`}
+                transition={{ delay: 0.05 * i }}
+                className={`rounded-xl border p-3.5 ${severityColor(flag.severity)}`}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                    flag.severity === 'CRITICAL'
-                      ? 'bg-status-fake/20 text-status-fake'
-                      : flag.severity === 'HIGH'
-                        ? 'bg-orange-400/20 text-orange-400'
-                        : flag.severity === 'MEDIUM'
-                          ? 'bg-status-suspicious/20 text-status-suspicious'
-                          : 'bg-surface-hover text-ink-muted'
-                  }`}>
+                <div className="flex items-center justify-between gap-3">
+                  <Badge tone={severityBadgeTone(flag.severity)} size="sm">
                     {flag.severity}
+                  </Badge>
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-ink-muted">
+                    {flag.type}
                   </span>
-                  <span className="text-xs font-medium opacity-80">{flag.type}</span>
                 </div>
-                <p className="text-sm opacity-90">{flag.description}</p>
+                <p className="mt-2 text-sm text-ink-primary">{flag.description}</p>
               </motion.div>
             ))}
             {flags.length > 3 && (
               <button
                 onClick={() => setShowAllFlags(!showAllFlags)}
-                className="text-xs text-primary hover:underline"
+                className="text-xs font-semibold text-primary hover:underline"
               >
                 {showAllFlags ? 'Show less' : `Show ${flags.length - 3} more flags`}
               </button>
             )}
-          </div>
-        </div>
+          </PanelBody>
+        </Panel>
       )}
 
-      {/* Actions */}
-      <div className="p-4 flex flex-wrap gap-2">
-        <button
-          onClick={downloadReport}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-dark"
-        >
-          <Download size={15} />
-          Download Report
-        </button>
-        <button
-          onClick={() => {
-            void shareReport()
-          }}
-          className="flex items-center gap-2 rounded-lg border border-surface-border bg-surface-elevated px-4 py-2 text-sm font-medium text-ink-primary transition-colors hover:bg-surface-hover"
-        >
-          <Share2 size={15} />
-          Share
-        </button>
-        <button
-          onClick={() => toast('Dispute request noted for manual review')}
-          className="flex items-center gap-2 rounded-lg border border-surface-border bg-surface-elevated px-4 py-2 text-sm font-medium text-ink-secondary transition-colors hover:bg-surface-hover"
-        >
-          <Flag size={15} />
-          Dispute
-        </button>
-      </div>
-    </motion.div>
+      {/* Recommendation + actions */}
+      <Panel>
+        <PanelHeader>
+          <PanelTitle>Admin Recommendation</PanelTitle>
+          <Badge tone={meta.tone} dot>
+            {meta.recommend}
+          </Badge>
+        </PanelHeader>
+        <PanelBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-ink-secondary">
+            Based on the trust score and detected flags, VerityAI suggests:{' '}
+            <span className="font-semibold text-ink-primary">{meta.recommend}</span>.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={downloadReport} leftIcon={<Download size={14} />}>
+              Export Verification Report
+            </Button>
+            <Button variant="secondary" onClick={() => void shareReport()} leftIcon={<Share2 size={14} />}>
+              Share
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => toast('Dispute request noted for manual review')}
+              leftIcon={<Flag size={14} />}
+            >
+              Dispute
+            </Button>
+          </div>
+        </PanelBody>
+      </Panel>
+    </div>
   )
 }
+
+function Stat({
+  label,
+  value,
+  highlight,
+}: {
+  label: string
+  value: string
+  highlight?: 'verified' | 'suspicious' | 'fake'
+}) {
+  const tone =
+    highlight === 'verified'
+      ? 'text-status-verified'
+      : highlight === 'suspicious'
+        ? 'text-status-suspicious'
+        : highlight === 'fake'
+          ? 'text-status-fake'
+          : 'text-ink-primary'
+  return (
+    <div className="rounded-xl border border-surface-border bg-surface-elevated/40 p-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">{label}</p>
+      <p className={`mt-1 font-mono text-base font-bold ${tone}`}>{value}</p>
+    </div>
+  )
+}
+
