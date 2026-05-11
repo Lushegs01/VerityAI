@@ -355,7 +355,7 @@ export default function VerdictCard({ certificate }: VerdictCardProps) {
         </PanelHeader>
         <PanelBody className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-ink-secondary">
-            Based on the trust score and detected flags, VerityAI suggests:{' '}
+            Based on the trust score and detected flags, Verity suggests:{' '}
             <span className="font-semibold text-ink-primary">{meta.recommend}</span>.
           </p>
           <div className="flex flex-wrap gap-2">

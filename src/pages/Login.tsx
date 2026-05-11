@@ -12,6 +12,7 @@ import {
   Brain,
 } from 'lucide-react'
 import { Paths } from '@contracts/constants'
+import { BrandLockup } from '@/components/brand/Logo'
 
 const benefits = [
   {
@@ -52,12 +53,8 @@ export default function Login() {
           <div className="absolute -top-32 -left-32 -z-10 size-[480px] rounded-full bg-primary/15 blur-[120px]" aria-hidden />
           <div className="absolute bottom-0 right-0 -z-10 size-[400px] rounded-full bg-accent-cyan/10 blur-[120px]" aria-hidden />
 
-          <Link to="/" className="inline-flex items-center gap-2.5 group">
-            <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary-600 to-accent-cyan shadow-glow transition-transform group-hover:scale-105">
-              <ShieldCheck className="text-white" size={20} strokeWidth={2.5} />
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
-            </div>
-            <span className="font-display text-base font-bold tracking-tight text-ink-primary">VerityAI</span>
+          <Link to="/" className="block">
+            <BrandLockup size={42} gapColor="hsl(var(--surface-card))" />
           </Link>
 
           <div className="mt-auto max-w-md">
@@ -121,11 +118,8 @@ export default function Login() {
           </Link>
 
           <div className="my-auto mx-auto w-full max-w-md py-10">
-            <div className="lg:hidden mb-8 flex items-center gap-2.5">
-              <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary-600 to-accent-cyan shadow-glow">
-                <ShieldCheck className="text-white" size={20} strokeWidth={2.5} />
-              </div>
-              <span className="font-display text-base font-bold tracking-tight text-ink-primary">VerityAI</span>
+            <div className="lg:hidden mb-8">
+              <BrandLockup size={40} showSubtitle={false} />
             </div>
 
             <motion.div
@@ -135,7 +129,7 @@ export default function Login() {
               className="rounded-3xl border border-surface-border bg-surface-card p-7 sm:p-9 shadow-soft"
             >
               <h2 className="font-display text-2xl font-bold tracking-tight text-ink-primary">
-                Sign in to VerityAI
+                Sign in to Verity
               </h2>
               <p className="mt-2 text-sm text-ink-muted">
                 Continue with your work account to access the verification dashboard.
@@ -190,7 +184,7 @@ export default function Login() {
             </p>
 
             <div className="mt-10 hidden lg:flex items-center justify-center gap-2 text-xs text-ink-muted">
-              <span>New to VerityAI?</span>
+              <span>New to Verity?</span>
               <Link to="/" className="inline-flex items-center gap-1 font-semibold text-ink-secondary hover:text-ink-primary">
                 See how it works
                 <ArrowRight size={12} />

@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { BrandLockup } from '@/components/brand/Logo'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Overview', description: 'Command center' },
@@ -25,19 +26,8 @@ interface SidebarProps {
 
 function Brand() {
   return (
-    <NavLink to="/dashboard" className="flex items-center gap-3 group">
-      <div className="relative flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary-600 to-accent-cyan shadow-glow transition-transform group-hover:scale-105">
-        <ShieldCheck className="text-white relative z-10" size={20} strokeWidth={2.5} />
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
-      </div>
-      <div className="min-w-0">
-        <h1 className="font-display text-base font-bold leading-tight text-ink-primary tracking-tight">
-          VerityAI
-        </h1>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
-          Trust Engine
-        </p>
-      </div>
+    <NavLink to="/dashboard" className="block">
+      <BrandLockup size={40} gapColor="hsl(var(--sidebar-background))" />
     </NavLink>
   )
 }

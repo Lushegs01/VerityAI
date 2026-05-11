@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router'
 import { Toaster } from 'react-hot-toast'
-import { ShieldCheck } from 'lucide-react'
 import { useAuth } from './hooks/useAuth'
 import AppShell from './components/layout/AppShell'
+import { BrandMark } from './components/brand/Logo'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -17,13 +17,11 @@ function FullScreenLoader() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-surface-base">
       <div className="relative">
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary-600 to-accent-cyan shadow-glow">
-          <ShieldCheck className="text-white" size={20} strokeWidth={2.5} />
-        </div>
-        <span className="absolute -inset-2 animate-ping rounded-2xl border-2 border-primary/40" />
+        <BrandMark size={56} glow />
+        <span className="absolute -inset-2 animate-ping rounded-full border-2 border-primary/30" />
       </div>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink-muted">
-        Loading VerityAI…
+        Loading Verity…
       </p>
     </div>
   )

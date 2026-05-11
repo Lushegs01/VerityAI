@@ -21,7 +21,7 @@ export default function TopBar({ onMenuClick }: TopBarProps) {
   const balance = parseFloat(user?.walletBalance || '0')
 
   const matched = Object.keys(pageInfo).find((p) => location.pathname.startsWith(p))
-  const info = matched ? pageInfo[matched] : { title: 'VerityAI' }
+  const info = matched ? pageInfo[matched] : { title: 'Verity' }
 
   const planLabel = (user?.plan || 'free').toUpperCase()
   const planTone =

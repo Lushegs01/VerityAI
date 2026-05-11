@@ -39,12 +39,12 @@ export default function ActivityChart({ data }: { data: ActivityData[] }) {
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="#3B82F6" stopOpacity={0} />
+            <stop offset="0%" stopColor="#E51E56" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="#E51E56" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="strokeGradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#3B82F6" />
-            <stop offset="100%" stopColor="#22D3EE" />
+            <stop offset="0%" stopColor="#FF3D6E" />
+            <stop offset="100%" stopColor="#E51E56" />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 6" stroke={gridColor} vertical={false} />

@@ -233,7 +233,7 @@ export default function Wallet() {
                 <p className="mt-3 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-muted">
                   Beneficiary
                 </p>
-                <p className="text-sm text-ink-primary">VerityAI Wallet</p>
+                <p className="text-sm text-ink-primary">Verity Wallet</p>
               </div>
             </PanelBody>
           </Panel>
