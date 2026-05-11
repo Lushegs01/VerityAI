@@ -11,7 +11,9 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/store/authStore'
 import { trpc } from '@/providers/trpc'
+import { demoActivity, demoRecent, demoStats } from '@/lib/demoData'
 import ActivityChart from '@/components/charts/ActivityChart'
 import {
   Badge,
@@ -163,9 +165,17 @@ function WalletSection({ balance }: { balance: number }) {
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const { data: stats, isLoading: statsLoading } = trpc.dashboard.stats.useQuery()
-  const { data: recent, isLoading: recentLoading } = trpc.dashboard.recent.useQuery()
-  const { data: activity, isLoading: activityLoading } = trpc.dashboard.activity.useQuery()
+  const isDemo = useAuthStore((s) => s.isDemo)
+  const liveStats = trpc.dashboard.stats.useQuery(undefined, { enabled: !isDemo })
+  const liveRecent = trpc.dashboard.recent.useQuery(undefined, { enabled: !isDemo })
+  const liveActivity = trpc.dashboard.activity.useQuery(undefined, { enabled: !isDemo })
+
+  const stats = isDemo ? demoStats : liveStats.data
+  const recent = isDemo ? demoRecent : liveRecent.data
+  const activity = isDemo ? demoActivity : liveActivity.data
+  const statsLoading = !isDemo && liveStats.isLoading
+  const recentLoading = !isDemo && liveRecent.isLoading
+  const activityLoading = !isDemo && liveActivity.isLoading
 
   const totalVerified = stats?.totalVerified || 0
   const totalSuspicious = stats?.totalSuspicious || 0

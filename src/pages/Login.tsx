@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Paths } from '@contracts/constants'
 import { Button } from '@/components/ui-system'
+import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils'
 
 type Mode = 'login' | 'register'
@@ -114,10 +115,14 @@ function FormField({ label, icon, error, rightSlot, id, ...props }: InputProps) 
 export default function Login() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const loginAsDemo = useAuthStore((s) => s.loginAsDemo)
   const [mode, setMode] = useState<Mode>('login')
   const [showPw, setShowPw] = useState(false)
   const [showPw2, setShowPw2] = useState(false)
   const [password, setPassword] = useState('')
+  const [email, setEmail] = useState('demo@verity.app')
+  const [fullName, setFullName] = useState('')
+  const [company, setCompany] = useState('')
   const [oauthError, setOauthError] = useState<string | null>(null)
 
   const isRegister = mode === 'register'
@@ -134,6 +139,12 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!email) return
+    loginAsDemo(
+      email,
+      fullName || email.split('@')[0],
+      company || (isRegister ? company : 'Demo Co.'),
+    )
     navigate('/dashboard')
   }
 
@@ -203,8 +214,20 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           {isRegister && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Full Name" icon={<User size={16} />} placeholder="Ada Lovelace" />
-              <FormField label="Company" icon={<Building2 size={16} />} placeholder="VerityAI" />
+              <FormField
+                label="Full Name"
+                icon={<User size={16} />}
+                placeholder="Ada Lovelace"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+              <FormField
+                label="Company"
+                icon={<Building2 size={16} />}
+                placeholder="VerityAI"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+              />
             </div>
           )}
 
@@ -213,6 +236,8 @@ export default function Login() {
             type="email"
             icon={<Mail size={16} />}
             placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
 
@@ -292,7 +317,11 @@ export default function Login() {
           <GoogleIcon /> Continue with Google
         </button>
 
-        <p className="mt-8 text-center text-sm font-medium text-ink-secondary">
+        <p className="mt-4 text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
+          Tip — any email + password works in Demo Mode
+        </p>
+
+        <p className="mt-6 text-center text-sm font-medium text-ink-secondary">
           {isRegister ? 'Already have an account?' : "Don't have an account?"}{' '}
           <button
             type="button"

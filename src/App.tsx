@@ -7,8 +7,10 @@ import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Verify from './pages/Verify'
+import Bulk from './pages/Bulk'
 import History from './pages/History'
 import Wallet from './pages/Wallet'
+import Settings from './pages/Settings'
 import VerificationDetail from './pages/VerificationDetail'
 import PublicBadge from './pages/PublicBadge'
 import NotFound from './pages/NotFound'
@@ -87,8 +89,10 @@ export default function App() {
         <Route path="/badge/:token" element={<PublicBadge />} />
         <Route path="/dashboard" element={<ProtectedShell><Dashboard /></ProtectedShell>} />
         <Route path="/verify" element={<ProtectedShell><Verify /></ProtectedShell>} />
+        <Route path="/bulk" element={<ProtectedShell><Bulk /></ProtectedShell>} />
         <Route path="/history" element={<ProtectedShell><History /></ProtectedShell>} />
         <Route path="/wallet" element={<ProtectedShell><Wallet /></ProtectedShell>} />
+        <Route path="/settings" element={<ProtectedShell><Settings /></ProtectedShell>} />
         <Route path="/verification/:id" element={<ProtectedShell><VerificationDetail /></ProtectedShell>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

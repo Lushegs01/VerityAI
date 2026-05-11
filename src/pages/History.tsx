@@ -15,6 +15,8 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { trpc } from '@/providers/trpc'
+import { useAuthStore } from '@/store/authStore'
+import { demoRecent } from '@/lib/demoData'
 import {
   Button,
   EmptyState,
@@ -34,13 +36,47 @@ export default function History() {
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<CertificateTypeFilter>('')
 
-  const { data, isLoading } = trpc.verification.history.useQuery({
-    page,
-    limit: 15,
-    verdict: verdictFilter || undefined,
-    certificateType: typeFilter || undefined,
-    search: searchQuery || undefined,
-  })
+  const isDemo = useAuthStore((s) => s.isDemo)
+  const live = trpc.verification.history.useQuery(
+    {
+      page,
+      limit: 15,
+      verdict: verdictFilter || undefined,
+      certificateType: typeFilter || undefined,
+      search: searchQuery || undefined,
+    },
+    { enabled: !isDemo },
+  )
+
+  // Build a demo-mode response in the same shape as the trpc one so the
+  // rest of the page renders untouched.
+  const demoData = (() => {
+    if (!isDemo) return null
+    const filtered = demoRecent.filter((c) => {
+      if (verdictFilter && c.verdict !== verdictFilter) return false
+      if (typeFilter && c.certificateType !== typeFilter) return false
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        if (
+          !c.applicantName.toLowerCase().includes(q) &&
+          !c.publicId.toLowerCase().includes(q) &&
+          !c.institutionName.toLowerCase().includes(q)
+        ) {
+          return false
+        }
+      }
+      return true
+    })
+    return {
+      items: filtered,
+      total: filtered.length,
+      page: 1,
+      totalPages: 1,
+    }
+  })()
+
+  const data = isDemo ? demoData : live.data
+  const isLoading = !isDemo && live.isLoading
 
   const verdictTabs: { value: VerdictFilter; label: string; icon: typeof ShieldCheck; tone: string }[] = [
     { value: '', label: 'All', icon: FileSearch, tone: 'text-ink-secondary' },

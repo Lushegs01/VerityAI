@@ -4,7 +4,7 @@ import {
   History,
   LayoutDashboard,
   ShieldCheck,
-  Award,
+  Wallet as WalletIcon,
   Layers,
   Settings,
   X,
@@ -20,7 +20,7 @@ const navItems = [
   { to: '/verify', icon: ShieldCheck, label: 'Verify Certificate' },
   { to: '/bulk', icon: Layers, label: 'Bulk Verify' },
   { to: '/history', icon: History, label: 'History' },
-  { to: '/badge', icon: Award, label: 'Badge' },
+  { to: '/wallet', icon: WalletIcon, label: 'Wallet' },
 ]
 
 const preferenceItems = [
