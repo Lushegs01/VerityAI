@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import ThemeToggle from '@/components/layout/ThemeToggle'
 import { Button } from '@/components/ui-system'
+import { BrandLockup } from '@/components/brand/Logo'
 
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0)
@@ -80,7 +81,7 @@ function HeroDashboard() {
             <span className="size-2.5 rounded-full bg-status-suspicious/70" />
             <span className="size-2.5 rounded-full bg-status-verified/70" />
           </div>
-          <p className="font-mono text-[10px] text-ink-muted">verityai.com/verify</p>
+          <p className="font-mono text-[10px] text-ink-muted">verity.app/verify</p>
           <Lock size={11} className="text-ink-muted" />
         </div>
 
@@ -239,12 +240,8 @@ export default function Landing() {
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-primary-600 to-accent-cyan shadow-glow transition-transform group-hover:scale-105">
-              <ShieldCheck className="text-white" size={18} strokeWidth={2.5} />
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/20 to-transparent" />
-            </div>
-            <span className="font-display text-base font-bold tracking-tight">VerityAI</span>
+          <Link to="/" className="block">
+            <BrandLockup size={36} showSubtitle={false} />
           </Link>
 
           <div className="hidden md:flex items-center gap-7">
@@ -324,7 +321,7 @@ export default function Landing() {
                 <span className="text-gradient">Trust-First Economy</span>
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-secondary">
-                VerityAI helps institutions verify documents, identities, payments and risk
+                Verity helps institutions verify documents, identities, payments and risk
                 signals using intelligent automation and secure financial workflows.
               </p>
 
@@ -442,7 +439,7 @@ export default function Landing() {
               Three steps. Verified in seconds.
             </h2>
             <p className="mt-4 text-base text-ink-secondary">
-              From upload to trust score, VerityAI compresses weeks of manual review into a single,
+              From upload to trust score, Verity compresses weeks of manual review into a single,
               auditable, payment-backed workflow.
             </p>
           </div>
@@ -691,12 +688,7 @@ export default function Landing() {
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 md:grid-cols-4">
             <div>
-              <div className="flex items-center gap-2.5">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent-cyan shadow-glow">
-                  <ShieldCheck className="text-white" size={15} strokeWidth={2.5} />
-                </div>
-                <span className="font-display text-sm font-bold text-ink-primary">VerityAI</span>
-              </div>
+              <BrandLockup size={32} showSubtitle={false} />
               <p className="mt-3 text-sm text-ink-muted">
                 AI-powered verification for institutions, employers, and a trust-first economy.
               </p>
@@ -752,7 +744,7 @@ export default function Landing() {
 
           <div className="mt-10 flex flex-col gap-3 border-t border-surface-border pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-ink-muted">
-              &copy; {new Date().getFullYear()} VerityAI &middot; Built for Squad Hackathon 3.0
+              &copy; {new Date().getFullYear()} Verity &middot; Built for Squad Hackathon 3.0
             </p>
             <p className="text-xs text-ink-muted">Trust, Verified.</p>
           </div>

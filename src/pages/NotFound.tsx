@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
-import { ShieldCheck, ArrowLeft, Search } from 'lucide-react'
+import { ArrowLeft, Search } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui-system'
+import { BrandMark } from '@/components/brand/Logo'
 
 export default function NotFound() {
   return (
@@ -14,9 +15,9 @@ export default function NotFound() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <div className="relative mx-auto mb-7 flex size-20 items-center justify-center rounded-3xl border border-surface-border bg-surface-card shadow-soft">
-          <ShieldCheck size={28} className="text-primary" />
-          <span className="absolute -top-2 -right-2 flex size-7 items-center justify-center rounded-full border border-status-fake/30 bg-status-fake/15 text-status-fake">
+        <div className="relative mx-auto mb-7 inline-flex">
+          <BrandMark size={72} glow />
+          <span className="absolute -top-1 -right-1 flex size-7 items-center justify-center rounded-full border border-status-fake/30 bg-status-fake/15 text-status-fake ring-2 ring-surface-base">
             <Search size={13} />
           </span>
         </div>

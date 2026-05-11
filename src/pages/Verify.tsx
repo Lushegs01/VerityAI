@@ -442,7 +442,7 @@ export default function Verify() {
                     </div>
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
-                        VerityAI Forensics
+                        Verity Forensics
                       </p>
                       <p className="font-display text-lg font-bold text-ink-primary">Analyzing document…</p>
                     </div>
