@@ -116,7 +116,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   const fallbackTopup = trpc.wallet.topup.useMutation({
     onSuccess: async (data) => {
       await refreshWallet()
-      toast.success(`N${data.amount.toLocaleString()} added to wallet`)
+      toast.success(`₦${data.amount.toLocaleString()} added to wallet`)
       onClose()
     },
     onError: (error) => {
@@ -140,7 +140,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
         toast.success('Top-up already credited')
       } else {
         toast.success(
-          `N${result.amount.toLocaleString('en-NG')} credited (ref ${reference.slice(-6)})`,
+          `₦${result.amount.toLocaleString('en-NG')} credited (ref ${reference.slice(-6)})`,
         )
       }
       onClose()
@@ -153,7 +153,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
 
   const launchSquad = async () => {
     if (!Number.isFinite(finalAmount) || finalAmount < 500) {
-      toast.error('Minimum top-up is N500')
+      toast.error('Minimum top-up is ₦500')
       return
     }
 
@@ -226,7 +226,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
 
   const submitTransfer = () => {
     if (!Number.isFinite(finalAmount) || finalAmount < 500) {
-      toast.error('Minimum top-up is N500')
+      toast.error('Minimum top-up is ₦500')
       return
     }
     fallbackTopup.mutate({ amount: finalAmount, method: 'transfer' })
@@ -237,7 +237,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
       void launchSquad()
     } else {
       if (!Number.isFinite(finalAmount) || finalAmount < 500) {
-        toast.error('Minimum top-up is N500')
+        toast.error('Minimum top-up is ₦500')
         return
       }
       fallbackTopup.mutate({ amount: finalAmount, method: 'card' })
@@ -401,7 +401,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                                   : 'border-surface-border bg-surface-elevated text-ink-secondary hover:border-primary/30 hover:bg-surface-hover'
                               }`}
                             >
-                              N{a.toLocaleString()}
+                              ₦{a.toLocaleString()}
                             </button>
                           )
                         })}
@@ -412,7 +412,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                           type="number"
                           value={customAmount}
                           onChange={(e) => setCustomAmount(e.target.value)}
-                          placeholder="Minimum N500"
+                          placeholder="Minimum ₦500"
                           min={500}
                         />
                       </div>
@@ -423,17 +423,17 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                         <div className="flex justify-between">
                           <dt className="text-ink-muted">Amount</dt>
                           <dd className="font-mono text-ink-primary">
-                            N{Number.isFinite(finalAmount) ? finalAmount.toLocaleString() : '0'}
+                            ₦{Number.isFinite(finalAmount) ? finalAmount.toLocaleString() : '0'}
                           </dd>
                         </div>
                         <div className="flex justify-between">
                           <dt className="text-ink-muted">Processing fee (1.5%)</dt>
-                          <dd className="font-mono text-ink-primary">N{fee.toLocaleString()}</dd>
+                          <dd className="font-mono text-ink-primary">₦{fee.toLocaleString()}</dd>
                         </div>
                         <div className="flex justify-between border-t border-surface-border pt-2">
                           <dt className="text-sm font-semibold text-ink-primary">Total</dt>
                           <dd className="font-mono text-lg font-bold text-ink-primary">
-                            N{total.toLocaleString()}
+                            ₦{total.toLocaleString()}
                           </dd>
                         </div>
                       </dl>

@@ -78,7 +78,7 @@ export function PaymentStatusCard({ status, amount, reference, purpose, date, cl
         <div>
           <p className="text-[10px] uppercase tracking-wider text-ink-muted">Amount</p>
           <p className="font-mono text-lg font-bold text-ink-primary">
-            N{amount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+            ₦{amount.toLocaleString('en-NG', { minimumFractionDigits: 2 })}
           </p>
         </div>
         {purpose && (

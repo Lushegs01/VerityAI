@@ -161,11 +161,11 @@ export default function Wallet() {
                 </div>
               </div>
               <h2 className="mt-5 break-words font-display font-mono text-4xl font-bold tracking-tight text-ink-primary sm:text-5xl">
-                N{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₦{balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h2>
               <p className="mt-2 text-xs text-ink-muted">
                 Funds <span className="font-mono text-ink-primary">{Math.floor(balance / 500)}</span>{' '}
-                verifications at N500 each
+                verifications at ₦500 each
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <Badge tone="success" dot>Active</Badge>
@@ -187,13 +187,13 @@ export default function Wallet() {
             <MiniStat
               icon={ArrowDownLeft}
               label="Total funded"
-              value={`N${totalTopUps.toLocaleString('en-NG')}`}
+              value={`₦${totalTopUps.toLocaleString('en-NG')}`}
               tone="success"
             />
             <MiniStat
               icon={ArrowUpRight}
               label="Total spent"
-              value={`N${totalSpent.toLocaleString('en-NG')}`}
+              value={`₦${totalSpent.toLocaleString('en-NG')}`}
               tone="neutral"
             />
             <MiniStat
@@ -326,7 +326,7 @@ export default function Wallet() {
                 </div>
                 <div className="text-right">
                   <p className={`font-mono text-sm font-bold ${getAmountColor(tx.type)}`}>
-                    {getSign(tx.type)}N
+                    {getSign(tx.type)}₦
                     {parseFloat(tx.amount).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
                   </p>
                   <p className="mt-0.5 flex items-center justify-end gap-1 text-[10px] text-ink-muted">
