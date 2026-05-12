@@ -97,6 +97,15 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
     stageRef.current = stage
   }, [stage])
 
+  // Demo flow auto-progresses on a chain of timers. Track them so Cancel /
+  // early-confirm can abort cleanly without racing the timed steps.
+  const demoTimers = useRef<number[]>([])
+  const clearDemoTimers = () => {
+    demoTimers.current.forEach((id) => window.clearTimeout(id))
+    demoTimers.current = []
+  }
+  useEffect(() => () => clearDemoTimers(), [])
+
   const utils = trpc.useUtils()
   // In demo mode the user has no real session, so the trpc lookup would 401.
   // Skip it and treat Squad as unconfigured locally — we'll simulate the flow.
@@ -114,6 +123,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   }
 
   const resetToIdle = () => {
+    clearDemoTimers()
     setStage('idle')
     setActiveRef(null)
   }
@@ -138,7 +148,22 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   const fee = Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015) : 0
   const total = Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015) : 0
 
+  /** Used by both the auto-success callback and the manual "I already paid"
+   *  button. In demo mode we never go to the server — the demo wallet lives
+   *  entirely in the auth store. */
   const verifyAndCredit = async (reference: string) => {
+    if (isDemo || reference.startsWith('DEMO-')) {
+      clearDemoTimers()
+      setStage('verifying')
+      // Tiny beat so the verifying spinner is visible.
+      await new Promise((r) => setTimeout(r, 500))
+      adjustDemoBalance(finalAmount)
+      toast.success(
+        `₦${finalAmount.toLocaleString('en-NG')} credited (ref ${reference.slice(-6)})`,
+      )
+      onClose()
+      return
+    }
     setStage('verifying')
     try {
       const result = await confirm.mutateAsync({ reference })
@@ -152,8 +177,16 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
       }
       onClose()
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Could not verify payment'
-      toast.error(message)
+      // Surface the actual server error so the user can act on it (insufficient
+      // funds, payment not yet posted, reference unknown, etc.) instead of
+      // seeing a generic "verify failed".
+      const raw = e instanceof Error ? e.message : 'Could not verify payment'
+      const friendly = /not.*found|unknown.*ref/i.test(raw)
+        ? "We can't find this payment yet. Wait a moment after paying, then try again."
+        : /pending|not.*paid|incomplete/i.test(raw)
+          ? "Squad says this payment hasn't completed yet. Finish it in the popup, then click verify."
+          : raw
+      toast.error(`Squad verify failed: ${friendly}`)
       setStage('awaiting')
     }
   }
@@ -246,33 +279,38 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   }
 
   /** Demo-mode top-up: walk through a simulated Squad "checkout" so the
-   *  user gets visible Squad-branded feedback, then credit the local wallet
-   *  balance held in the auth store. */
-  const launchDemoSquad = async () => {
+   *  user gets visible Squad-branded feedback, then credit the local wallet.
+   *  All steps are scheduled through clearable timers so Cancel or
+   *  "I already paid" can interrupt cleanly. */
+  const launchDemoSquad = () => {
     if (!Number.isFinite(finalAmount) || finalAmount < 500) {
       toast.error('Minimum top-up is ₦500')
       return
     }
     const reference = `DEMO-${Date.now().toString(36).toUpperCase()}`
+    clearDemoTimers()
     setStage('launching')
     setActiveRef(reference)
-    // Brief "loading checkout…" beat.
-    await new Promise((r) => setTimeout(r, 600))
-    setStage('awaiting')
-    // Simulate the popup processing.
-    await new Promise((r) => setTimeout(r, 1800))
-    setStage('verifying')
-    await new Promise((r) => setTimeout(r, 900))
-    adjustDemoBalance(finalAmount)
-    toast.success(
-      `₦${finalAmount.toLocaleString('en-NG')} credited (ref ${reference.slice(-6)})`,
-    )
-    onClose()
+
+    const schedule = (ms: number, fn: () => void) => {
+      const id = window.setTimeout(fn, ms)
+      demoTimers.current.push(id)
+    }
+    // launching → awaiting (widget visible)
+    schedule(600, () => {
+      if (stageRef.current !== 'launching') return
+      setStage('awaiting')
+      // awaiting → verifying (Squad processing) → credit + close
+      schedule(1800, () => {
+        if (stageRef.current !== 'awaiting') return
+        void verifyAndCredit(reference)
+      })
+    })
   }
 
   const handleCardSubmit = () => {
     if (isDemo) {
-      void launchDemoSquad()
+      launchDemoSquad()
       return
     }
     if (squadConfig?.squadConfigured) {
