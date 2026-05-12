@@ -24,6 +24,8 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setAuth: (user: User) => void;
   loginAsDemo: (email: string, name?: string, company?: string) => void;
+  /** Demo-only: credit (positive amount) or debit (negative) the local wallet balance. */
+  adjustDemoBalance: (deltaNgn: number) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
 }
@@ -77,6 +79,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     writeDemoUser(user);
     set({ user, isAuthenticated: true, isLoading: false, isDemo: true });
   },
+  adjustDemoBalance: (deltaNgn) =>
+    set((state) => {
+      if (!state.user) return state;
+      const current = parseFloat(state.user.walletBalance || "0");
+      const next = Math.max(0, current + deltaNgn);
+      const updated: User = {
+        ...state.user,
+        walletBalance: next.toFixed(2),
+      };
+      writeDemoUser(updated);
+      return { user: updated };
+    }),
   logout: () => {
     writeDemoUser(null);
     set({ user: null, isAuthenticated: false, isDemo: false });

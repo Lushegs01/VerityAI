@@ -14,6 +14,7 @@ import {
 import toast from 'react-hot-toast'
 import { trpc } from '@/providers/trpc'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/store/authStore'
 import { Button, Field } from '@/components/ui-system'
 
 interface TopUpModalProps {
@@ -81,6 +82,8 @@ type Stage = 'idle' | 'launching' | 'awaiting' | 'verifying'
 
 export default function TopUpModal({ onClose }: TopUpModalProps) {
   const { user } = useAuth()
+  const isDemo = useAuthStore((s) => s.isDemo)
+  const adjustDemoBalance = useAuthStore((s) => s.adjustDemoBalance)
   const [method, setMethod] = useState<'card' | 'transfer'>('card')
   const [amount, setAmount] = useState(5000)
   const [customAmount, setCustomAmount] = useState('')
@@ -94,8 +97,21 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
     stageRef.current = stage
   }, [stage])
 
+  // Demo flow auto-progresses on a chain of timers. Track them so Cancel /
+  // early-confirm can abort cleanly without racing the timed steps.
+  const demoTimers = useRef<number[]>([])
+  const clearDemoTimers = () => {
+    demoTimers.current.forEach((id) => window.clearTimeout(id))
+    demoTimers.current = []
+  }
+  useEffect(() => () => clearDemoTimers(), [])
+
   const utils = trpc.useUtils()
-  const { data: squadConfig } = trpc.wallet.publicConfig.useQuery()
+  // In demo mode the user has no real session, so the trpc lookup would 401.
+  // Skip it and treat Squad as unconfigured locally — we'll simulate the flow.
+  const { data: squadConfig } = trpc.wallet.publicConfig.useQuery(undefined, {
+    enabled: !isDemo,
+  })
   const finalAmount = customAmount.trim() ? Number(customAmount) : amount
 
   const refreshWallet = async () => {
@@ -107,6 +123,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   }
 
   const resetToIdle = () => {
+    clearDemoTimers()
     setStage('idle')
     setActiveRef(null)
   }
@@ -131,7 +148,22 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   const fee = Number.isFinite(finalAmount) ? Math.round(finalAmount * 0.015) : 0
   const total = Number.isFinite(finalAmount) ? Math.round(finalAmount * 1.015) : 0
 
+  /** Used by both the auto-success callback and the manual "I already paid"
+   *  button. In demo mode we never go to the server — the demo wallet lives
+   *  entirely in the auth store. */
   const verifyAndCredit = async (reference: string) => {
+    if (isDemo || reference.startsWith('DEMO-')) {
+      clearDemoTimers()
+      setStage('verifying')
+      // Tiny beat so the verifying spinner is visible.
+      await new Promise((r) => setTimeout(r, 500))
+      adjustDemoBalance(finalAmount)
+      toast.success(
+        `₦${finalAmount.toLocaleString('en-NG')} credited (ref ${reference.slice(-6)})`,
+      )
+      onClose()
+      return
+    }
     setStage('verifying')
     try {
       const result = await confirm.mutateAsync({ reference })
@@ -145,8 +177,16 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
       }
       onClose()
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Could not verify payment'
-      toast.error(message)
+      // Surface the actual server error so the user can act on it (insufficient
+      // funds, payment not yet posted, reference unknown, etc.) instead of
+      // seeing a generic "verify failed".
+      const raw = e instanceof Error ? e.message : 'Could not verify payment'
+      const friendly = /not.*found|unknown.*ref/i.test(raw)
+        ? "We can't find this payment yet. Wait a moment after paying, then try again."
+        : /pending|not.*paid|incomplete/i.test(raw)
+          ? "Squad says this payment hasn't completed yet. Finish it in the popup, then click verify."
+          : raw
+      toast.error(`Squad verify failed: ${friendly}`)
       setStage('awaiting')
     }
   }
@@ -229,10 +269,50 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
       toast.error('Minimum top-up is ₦500')
       return
     }
+    if (isDemo) {
+      adjustDemoBalance(finalAmount)
+      toast.success(`₦${finalAmount.toLocaleString('en-NG')} credited via transfer`)
+      onClose()
+      return
+    }
     fallbackTopup.mutate({ amount: finalAmount, method: 'transfer' })
   }
 
+  /** Demo-mode top-up: walk through a simulated Squad "checkout" so the
+   *  user gets visible Squad-branded feedback, then credit the local wallet.
+   *  All steps are scheduled through clearable timers so Cancel or
+   *  "I already paid" can interrupt cleanly. */
+  const launchDemoSquad = () => {
+    if (!Number.isFinite(finalAmount) || finalAmount < 500) {
+      toast.error('Minimum top-up is ₦500')
+      return
+    }
+    const reference = `DEMO-${Date.now().toString(36).toUpperCase()}`
+    clearDemoTimers()
+    setStage('launching')
+    setActiveRef(reference)
+
+    const schedule = (ms: number, fn: () => void) => {
+      const id = window.setTimeout(fn, ms)
+      demoTimers.current.push(id)
+    }
+    // launching → awaiting (widget visible)
+    schedule(600, () => {
+      if (stageRef.current !== 'launching') return
+      setStage('awaiting')
+      // awaiting → verifying (Squad processing) → credit + close
+      schedule(1800, () => {
+        if (stageRef.current !== 'awaiting') return
+        void verifyAndCredit(reference)
+      })
+    })
+  }
+
   const handleCardSubmit = () => {
+    if (isDemo) {
+      launchDemoSquad()
+      return
+    }
     if (squadConfig?.squadConfigured) {
       void launchSquad()
     } else {
@@ -252,7 +332,7 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
   const cardButtonLabel =
     stage === 'launching'
       ? 'Loading checkout…'
-      : squadConfig?.squadConfigured
+      : isDemo || squadConfig?.squadConfigured
         ? 'Pay with Squad'
         : 'Simulate Card Payment'
 
@@ -288,9 +368,11 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                   Top Up Wallet
                 </h2>
                 <p className="text-[11px] text-ink-muted">
-                  {squadConfig?.squadConfigured
-                    ? 'Secured by Squad Payments'
-                    : 'Demo mode — Squad keys not configured'}
+                  {isDemo
+                    ? 'Demo mode — payments are simulated'
+                    : squadConfig?.squadConfigured
+                      ? 'Secured by Squad Payments'
+                      : 'Demo mode — Squad keys not configured'}
                 </p>
               </div>
             </div>
@@ -439,12 +521,13 @@ export default function TopUpModal({ onClose }: TopUpModalProps) {
                       </dl>
                     </div>
 
-                    {!squadConfig?.squadConfigured && (
-                      <div className="flex items-start gap-2 rounded-xl border border-status-suspicious/25 bg-status-suspicious/8 p-3 text-xs text-ink-primary">
+                    {(isDemo || !squadConfig?.squadConfigured) && (
+                      <div className="flex items-start gap-2 rounded-xl border border-status-suspicious/25 bg-status-suspicious-bg p-3 text-xs text-ink-primary">
                         <AlertCircle size={14} className="mt-0.5 shrink-0 text-status-suspicious" />
                         <span>
-                          Real Squad payments are disabled because the server keys aren't set. This
-                          button will simulate the credit so you can keep demoing the flow.
+                          {isDemo
+                            ? 'You\'re in demo mode — clicking Pay with Squad will walk through a simulated checkout and credit your local wallet.'
+                            : "Real Squad payments are disabled because the server keys aren't set. This button will simulate the credit so you can keep demoing the flow."}
                         </span>
                       </div>
                     )}
