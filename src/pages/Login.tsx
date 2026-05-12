@@ -167,7 +167,7 @@ export default function Login() {
         className="w-full max-w-lg rounded-3xl border border-surface-border bg-surface-card p-8 shadow-2xl md:p-10"
       >
         <div className="flex flex-col items-center text-center">
-          <BrandMark size={64} glow gapColor="#FFFFFF" />
+          <BrandMark size={64} glow />
           <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
             <Sparkles size={10} /> VerityAI · Forensic Engine
           </span>

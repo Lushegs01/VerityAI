@@ -123,7 +123,7 @@ export default function TrustScoreRing({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="#E2E8F0"
+            stroke="var(--chart-track)"
             strokeWidth={strokeWidth}
           />
 

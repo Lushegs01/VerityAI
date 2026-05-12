@@ -19,9 +19,11 @@ interface VerityLogoProps {
 export function VerityLogo({
   size = 40,
   className,
-  gapColor = '#F5F1E8',
+  gapColor,
   title,
 }: VerityLogoProps) {
+  // Default to a CSS variable so the gap color follows the theme.
+  const resolvedGap = gapColor ?? 'var(--logo-gap)'
   return (
     <svg
       width={size}
@@ -37,7 +39,7 @@ export function VerityLogo({
       {/* Shield body */}
       <path
         d="M32 4 L52 9 L52 28 C52 42 42 54 32 60 C22 54 12 42 12 28 L12 9 Z"
-        fill="#0F172A"
+        fill="var(--logo-shield)"
       />
 
       {/* Brand-green accent fragment — upper left */}
@@ -45,7 +47,7 @@ export function VerityLogo({
 
       {/* Crack lines — drawn in the gap color so they read as fractures */}
       <g
-        stroke={gapColor}
+        stroke={resolvedGap}
         strokeWidth="1.8"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -66,7 +68,7 @@ export function VerityLogo({
         cx="38"
         cy="32"
         r="9"
-        fill={gapColor}
+        fill={resolvedGap}
         stroke="#059669"
         strokeWidth="2.6"
       />

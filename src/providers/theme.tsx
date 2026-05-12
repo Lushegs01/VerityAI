@@ -24,7 +24,7 @@ function isTheme(value: string | null): value is Theme {
 }
 
 function readInitialTheme(): Theme {
-  if (typeof window === 'undefined') return 'dark'
+  if (typeof window === 'undefined') return 'light'
 
   const currentTheme = document.documentElement.dataset.theme ?? null
   if (isTheme(currentTheme)) return currentTheme
@@ -32,7 +32,7 @@ function readInitialTheme(): Theme {
   const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
   if (isTheme(storedTheme)) return storedTheme
 
-  return 'dark'
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 function applyTheme(theme: Theme) {

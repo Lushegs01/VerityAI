@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   BarChart,
   Bar,
@@ -7,17 +8,38 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { useTheme } from '@/providers/theme'
 
 interface ActivityData {
   date: string
   count: number
 }
 
+function readVar(name: string, fallback: string) {
+  if (typeof window === 'undefined') return fallback
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return v || fallback
+}
+
 export default function ActivityChart({ data }: { data: ActivityData[] }) {
-  const gridColor = '#E2E8F0'
-  const mutedText = '#475569'
-  const tooltipBackground = '#FFFFFF'
-  const tooltipText = '#0F172A'
+  const { theme } = useTheme()
+  // Re-read CSS vars whenever the theme flips so recharts repaints in
+  // the new palette without a hard reload.
+  const [palette, setPalette] = useState(() => ({
+    grid: readVar('--chart-grid', '#E2E8F0'),
+    text: readVar('--chart-text', '#475569'),
+    tooltipBg: readVar('--chart-tooltip-bg', '#FFFFFF'),
+    tooltipText: readVar('--chart-tooltip-text', '#0F172A'),
+  }))
+
+  useEffect(() => {
+    setPalette({
+      grid: readVar('--chart-grid', '#E2E8F0'),
+      text: readVar('--chart-text', '#475569'),
+      tooltipBg: readVar('--chart-tooltip-bg', '#FFFFFF'),
+      tooltipText: readVar('--chart-tooltip-text', '#0F172A'),
+    })
+  }, [theme])
 
   if (!data || data.length === 0) {
     return (
@@ -43,15 +65,15 @@ export default function ActivityChart({ data }: { data: ActivityData[] }) {
             <stop offset="100%" stopColor="#059669" stopOpacity={0.85} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 6" stroke={gridColor} vertical={false} />
+        <CartesianGrid strokeDasharray="3 6" stroke={palette.grid} vertical={false} />
         <XAxis
           dataKey="date"
-          tick={{ fill: mutedText, fontSize: 11, fontFamily: 'JetBrains Mono' }}
-          axisLine={{ stroke: gridColor }}
+          tick={{ fill: palette.text, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+          axisLine={{ stroke: palette.grid }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: mutedText, fontSize: 11, fontFamily: 'JetBrains Mono' }}
+          tick={{ fill: palette.text, fontSize: 11, fontFamily: 'JetBrains Mono' }}
           axisLine={false}
           tickLine={false}
           allowDecimals={false}
@@ -59,12 +81,12 @@ export default function ActivityChart({ data }: { data: ActivityData[] }) {
         <Tooltip
           cursor={{ fill: 'rgba(5, 150, 105, 0.05)' }}
           contentStyle={{
-            backgroundColor: tooltipBackground,
-            border: `1px solid ${gridColor}`,
+            backgroundColor: palette.tooltipBg,
+            border: `1px solid ${palette.grid}`,
             borderRadius: '12px',
             fontSize: '12px',
-            color: tooltipText,
-            boxShadow: '0 12px 32px -12px rgba(0,0,0,0.15)',
+            color: palette.tooltipText,
+            boxShadow: '0 12px 32px -12px rgba(0,0,0,0.25)',
           }}
           formatter={(value: number) => [`${value} verifications`, 'Count']}
         />
