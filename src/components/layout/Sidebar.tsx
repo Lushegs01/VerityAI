@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { BrandLockup } from '@/components/brand/Logo'
+import ThemeToggle from '@/components/layout/ThemeToggle'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -122,6 +123,14 @@ function SidebarFooter() {
           Top Up Account →
         </NavLink>
       </div>
+
+      <div>
+        <p className="mb-2 px-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
+          Appearance
+        </p>
+        <ThemeToggle />
+      </div>
+
       <button
         type="button"
         onClick={() => logout()}
