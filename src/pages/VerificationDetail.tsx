@@ -100,7 +100,7 @@ export default function VerificationDetail() {
               {
                 icon: CreditCard,
                 title: 'Payment confirmed',
-                detail: 'N500 deducted from wallet via Squad ledger',
+                detail: '₦500 deducted from wallet via Squad ledger',
                 tone: 'text-status-verified',
                 bg: 'bg-status-verified/15 ring-status-verified/30',
               },

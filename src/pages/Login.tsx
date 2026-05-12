@@ -9,10 +9,10 @@ import {
   EyeOff,
   Lock,
   Mail,
-  ShieldCheck,
   Sparkles,
   User,
 } from 'lucide-react'
+import { BrandMark } from '@/components/brand/Logo'
 import { Paths } from '@contracts/constants'
 import { Button } from '@/components/ui-system'
 import { useAuthStore } from '@/store/authStore'
@@ -166,20 +166,16 @@ export default function Login() {
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className="w-full max-w-lg rounded-3xl border border-surface-border bg-surface-card p-8 shadow-2xl md:p-10"
       >
-        <div className="flex items-center gap-3">
-          <span className="relative inline-flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <ShieldCheck size={22} />
+        <div className="flex flex-col items-center text-center">
+          <BrandMark size={64} glow gapColor="#FFFFFF" />
+          <span className="mt-4 inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-primary">
+            <Sparkles size={10} /> VerityAI · Forensic Engine
           </span>
-          <div>
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-              <Sparkles size={10} className="mr-1 inline" /> VerityAI
-            </span>
-            <p className="font-display text-2xl font-black uppercase tracking-tight text-ink-primary md:text-3xl">
-              {isRegister ? 'Create Account' : 'Sign In'}
-            </p>
-          </div>
+          <p className="mt-3 font-display text-2xl font-black uppercase tracking-tight text-ink-primary md:text-3xl">
+            {isRegister ? 'Create Account' : 'Sign In'}
+          </p>
         </div>
-        <p className="mt-3 text-sm font-medium text-ink-secondary">
+        <p className="mt-3 text-center text-sm font-medium text-ink-secondary">
           {isRegister
             ? 'Join 1,200+ employers verifying smarter.'
             : 'Welcome back to the forensic engine.'}

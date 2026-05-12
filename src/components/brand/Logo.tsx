@@ -37,11 +37,11 @@ export function VerityLogo({
       {/* Shield body */}
       <path
         d="M32 4 L52 9 L52 28 C52 42 42 54 32 60 C22 54 12 42 12 28 L12 9 Z"
-        fill="#1F2937"
+        fill="#0F172A"
       />
 
-      {/* Crimson accent fragment — upper left */}
-      <path d="M12 9 L22 7 L21 22 L13 22 Z" fill="#C73E5A" />
+      {/* Brand-green accent fragment — upper left */}
+      <path d="M12 9 L22 7 L21 22 L13 22 Z" fill="#059669" />
 
       {/* Crack lines — drawn in the gap color so they read as fractures */}
       <g
@@ -67,16 +67,16 @@ export function VerityLogo({
         cy="32"
         r="9"
         fill={gapColor}
-        stroke="#C73E5A"
+        stroke="#059669"
         strokeWidth="2.6"
       />
       {/* Magnifier — inner highlight arc */}
       <path
         d="M33 29 A 5 5 0 0 1 38 26"
         fill="none"
-        stroke="#C73E5A"
+        stroke="#10B981"
         strokeWidth="1.4"
-        opacity="0.6"
+        opacity="0.7"
         strokeLinecap="round"
       />
       {/* Magnifier — handle */}
@@ -85,7 +85,7 @@ export function VerityLogo({
         y1="38.6"
         x2="51"
         y2="45"
-        stroke="#C73E5A"
+        stroke="#059669"
         strokeWidth="3.2"
         strokeLinecap="round"
       />
